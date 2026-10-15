@@ -56,7 +56,7 @@ function mockAuthenticatedAs(username: string): void {
 }
 
 describe('CreatorAnalyticsPage', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockAuthenticatedAs('alice');
     useCreatorAnalyticsMock.mockReturnValue({
@@ -67,7 +67,7 @@ describe('CreatorAnalyticsPage', () => {
     });
   });
 
-  it("denies access when viewing another creator's analytics", () => {
+  it("denies access when viewing another creator's analytics", (): void => {
     mockAuthenticatedAs('someone-else');
 
     render(<CreatorAnalyticsPage />);
@@ -75,13 +75,13 @@ describe('CreatorAnalyticsPage', () => {
     expect(screen.getByText('Access Denied')).toBeInTheDocument();
   });
 
-  it('renders the page for the creator viewing their own analytics', () => {
+  it('renders the page for the creator viewing their own analytics', (): void => {
     render(<CreatorAnalyticsPage />);
 
     expect(screen.getByText('Creator Analytics')).toBeInTheDocument();
   });
 
-  it('shows summary cards with correct values from the fetched data', () => {
+  it('shows summary cards with correct values from the fetched data', (): void => {
     render(<CreatorAnalyticsPage />);
 
     expect(screen.getByTestId('summary-total-earnings')).toHaveTextContent('$500.00');
@@ -89,7 +89,7 @@ describe('CreatorAnalyticsPage', () => {
     expect(screen.getByTestId('summary-earnings-week')).toHaveTextContent('$50.00');
   });
 
-  it('renders the earnings trend chart, source breakdown, and top tippers table', () => {
+  it('renders the earnings trend chart, source breakdown, and top tippers table', (): void => {
     render(<CreatorAnalyticsPage />);
 
     expect(screen.getByText('Earnings Trend')).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe('CreatorAnalyticsPage', () => {
     expect(screen.getByText('Bob')).toBeInTheDocument();
   });
 
-  it('shows a loading state while analytics are being fetched', () => {
+  it('shows a loading state while analytics are being fetched', (): void => {
     useCreatorAnalyticsMock.mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -111,7 +111,7 @@ describe('CreatorAnalyticsPage', () => {
     expect(screen.getByText(/loading analytics/i)).toBeInTheDocument();
   });
 
-  it('shows an error state when the fetch fails', () => {
+  it('shows an error state when the fetch fails', (): void => {
     useCreatorAnalyticsMock.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -124,7 +124,7 @@ describe('CreatorAnalyticsPage', () => {
     expect(screen.getByText(/failed to load analytics/i)).toBeInTheDocument();
   });
 
-  it('refetches with the updated range when a date range preset is selected', async () => {
+  it('refetches with the updated range when a date range preset is selected', async (): Promise<void> => {
     const user = userEvent.setup();
     render(<CreatorAnalyticsPage />);
 
@@ -141,7 +141,7 @@ describe('CreatorAnalyticsPage', () => {
     );
   });
 
-  it('exports a CSV with the currently loaded data and range when Export CSV is clicked', async () => {
+  it('exports a CSV with the currently loaded data and range when Export CSV is clicked', async (): Promise<void> => {
     render(<CreatorAnalyticsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
@@ -152,7 +152,7 @@ describe('CreatorAnalyticsPage', () => {
     );
   });
 
-  it('exports Excel and PDF reports with the currently loaded analytics data', async () => {
+  it('exports Excel and PDF reports with the currently loaded analytics data', async (): Promise<void> => {
     render(<CreatorAnalyticsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Export Excel' }));
@@ -165,7 +165,7 @@ describe('CreatorAnalyticsPage', () => {
     expect(printAnalyticsPdfMock).toHaveBeenCalledWith(sampleAnalytics, 'alice Creator Analytics');
   });
 
-  it('disables the Export CSV button while data is loading', () => {
+  it('disables the Export CSV button while data is loading', (): void => {
     useCreatorAnalyticsMock.mockReturnValue({
       data: undefined,
       isLoading: true,

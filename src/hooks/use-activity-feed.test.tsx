@@ -10,7 +10,7 @@ import { useActivityFeed } from './use-activity-feed';
 describe('useActivityFeed', () => {
   let queryClient: QueryClient;
 
-  beforeEach(() => {
+  beforeEach((): void => {
     queryClient = new QueryClient({
       defaultOptions: {
         queries: {
@@ -25,7 +25,7 @@ describe('useActivityFeed', () => {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 
-  it('fetches activity feed items', async () => {
+  it('fetches activity feed items', async (): Promise<void> => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
@@ -47,7 +47,7 @@ describe('useActivityFeed', () => {
             hasMore: false,
           }),
       } as Response)
-    );
+    ) as unknown as typeof fetch;
 
     const { result } = renderHook(() => useActivityFeed(), { wrapper });
 
@@ -59,20 +59,20 @@ describe('useActivityFeed', () => {
     expect(result.current.items[0].title).toBe('Test Announcement');
   });
 
-  it('handles loading state', () => {
-    global.fetch = vi.fn(() => new Promise(() => {}));
+  it('handles loading state', (): void => {
+    global.fetch = vi.fn(() => new Promise(() => {})) as unknown as typeof fetch;
 
     const { result } = renderHook(() => useActivityFeed(), { wrapper });
 
     expect(result.current.loading).toBe(true);
   });
 
-  it('handles error state', async () => {
+  it('handles error state', async (): Promise<void> => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: false,
       } as Response)
-    );
+    ) as unknown as typeof fetch;
 
     const { result } = renderHook(() => useActivityFeed(), { wrapper });
 
@@ -83,7 +83,7 @@ describe('useActivityFeed', () => {
     expect(result.current.error).not.toBeNull();
   });
 
-  it('applies filters', async () => {
+  it('applies filters', async (): Promise<void> => {
     global.fetch = vi.fn((url) => {
       const urlStr = url as string;
       if (urlStr.includes('type=tip')) {
@@ -120,7 +120,7 @@ describe('useActivityFeed', () => {
             hasMore: false,
           }),
       } as Response);
-    });
+    }) as unknown as typeof fetch;
 
     const { result } = renderHook(() => useActivityFeed(), { wrapper });
 
@@ -160,7 +160,7 @@ describe('useActivityFeed', () => {
             hasMore: callCount === 1,
           }),
       } as Response);
-    });
+    }) as unknown as typeof fetch;
 
     const { result } = renderHook(() => useActivityFeed({ initialPageSize: 1 }), { wrapper });
 

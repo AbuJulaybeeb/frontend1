@@ -84,7 +84,7 @@ const mockActivityItems: ActivityFeedItem[] = [
   },
 ];
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -122,9 +122,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching activity feed:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch activity feed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch activity feed' }, { status: 500 });
   }
 }

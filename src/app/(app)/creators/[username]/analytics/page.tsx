@@ -58,7 +58,7 @@ export default function CreatorAnalyticsPage(): JSX.Element {
 
   const { data, isLoading, isError, error } = useCreatorAnalytics(username, range);
   const liveMetrics = useLiveAnalytics(username);
-  const { notifications, isConnected: isLiveConnected } = useRealtimeNotifications(username);
+  const { notifications } = useRealtimeNotifications(username);
 
   // Mirrors the auth guard used by the sibling `/creators/[username]/dashboard`
   // page: only the creator viewing their own analytics can see this page.

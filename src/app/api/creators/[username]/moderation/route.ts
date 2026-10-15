@@ -13,6 +13,18 @@ import type {
   ModerationFilters,
 } from '@/types';
 
+interface ModerationRequest {
+  userId?: string;
+  userName?: string;
+  reason?: string;
+  itemId?: string;
+  itemType?: string;
+  reportedBy?: string;
+  reportedByName?: string;
+  description?: string;
+  action: string;
+}
+
 // Mock data - in production this would come from a database
 const mockModerationItems: ModerationItem[] = [
   {
@@ -123,7 +135,7 @@ const mockStats: ModerationStats = {
 export async function GET(
   request: NextRequest,
   { params }: { params: { username: string } }
-) {
+): Promise<NextResponse> {
   try {
     const { username } = params;
     const searchParams = request.nextUrl.searchParams;
@@ -146,20 +158,17 @@ export async function GET(
     }
   } catch (error) {
     console.error('Error fetching moderation data:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch moderation data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch moderation data' }, { status: 500 });
   }
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { username: string } }
-) {
+): Promise<NextResponse> {
   try {
     const { username } = params;
-    const body = await request.json();
+    const body: ModerationRequest = await request.json();
     const { action } = body;
 
     if (action === 'block-user') {
@@ -175,21 +184,15 @@ export async function POST(
     } else if (action === 'report-content') {
       return reportContent(body, username);
     } else {
-      return NextResponse.json(
-        { error: 'Invalid action' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
     console.error('Error processing moderation action:', error);
-    return NextResponse.json(
-      { error: 'Failed to process moderation action' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to process moderation action' }, { status: 500 });
   }
 }
 
-function getModerationItems(searchParams: URLSearchParams, username: string) {
+function getModerationItems(searchParams: URLSearchParams, _username: string): NextResponse {
   const status = searchParams.get('status') as ModerationFilters['status'] | null;
   const type = searchParams.get('type') as ModerationFilters['type'] | null;
   const reportedOnly = searchParams.get('reportedOnly') === 'true';
@@ -214,31 +217,31 @@ function getModerationItems(searchParams: URLSearchParams, username: string) {
   return NextResponse.json({ items: filteredItems, total: filteredItems.length });
 }
 
-function getBlockedUsers(username: string) {
+function getBlockedUsers(_username: string): NextResponse {
   return NextResponse.json({ blockedUsers: mockBlockedUsers, total: mockBlockedUsers.length });
 }
 
-function getActionLogs(username: string) {
+function getActionLogs(_username: string): NextResponse {
   return NextResponse.json({ actionLogs: mockActionLogs, total: mockActionLogs.length });
 }
 
-function getReports(username: string) {
+function getReports(_username: string): NextResponse {
   return NextResponse.json({ reports: mockReports, total: mockReports.length });
 }
 
-function getStats(username: string) {
+function getStats(_username: string): NextResponse {
   return NextResponse.json(mockStats);
 }
 
-function blockUser(body: any, username: string) {
+function blockUser(body: ModerationRequest, username: string): NextResponse {
   const { userId, userName, reason } = body;
 
   const newBlock: UserBlock = {
     id: Date.now().toString(),
     creatorId: username,
-    blockedUserId: userId,
-    blockedUserName: userName,
-    reason,
+    blockedUserId: userId || '',
+    blockedUserName: userName || '',
+    reason: reason || '',
     createdAt: new Date().toISOString(),
     blockedAt: new Date().toISOString(),
   };
@@ -248,13 +251,13 @@ function blockUser(body: any, username: string) {
   // Add action log
   const actionLog: ModerationActionLog = {
     id: Date.now().toString(),
-    itemId: userId,
+    itemId: userId || '',
     action: 'block_user',
     performedBy: username,
     performedByName: username,
     targetUserId: userId,
     targetUserName: userName,
-    reason,
+    reason: reason || '',
     createdAt: new Date().toISOString(),
   };
 
@@ -263,7 +266,7 @@ function blockUser(body: any, username: string) {
   return NextResponse.json({ success: true, block: newBlock });
 }
 
-function unblockUser(body: any, username: string) {
+function unblockUser(body: ModerationRequest, _username: string): NextResponse {
   const { userId } = body;
 
   const index = mockBlockedUsers.findIndex((block) => block.blockedUserId === userId);
@@ -274,40 +277,40 @@ function unblockUser(body: any, username: string) {
   return NextResponse.json({ success: true });
 }
 
-function deleteContent(body: any, username: string) {
+function deleteContent(body: ModerationRequest, username: string): NextResponse {
   const { itemId } = body;
 
   const index = mockModerationItems.findIndex((item) => item.id === itemId);
   if (index !== -1) {
     mockModerationItems[index].status = 'deleted';
     mockModerationItems[index].updatedAt = new Date().toISOString();
-    recordAction(username, itemId, 'delete_content');
+    recordAction(username, itemId || '', 'delete_content');
   }
 
   return NextResponse.json({ success: true });
 }
 
-function hideContent(body: any, username: string) {
+function hideContent(body: ModerationRequest, username: string): NextResponse {
   const { itemId } = body;
 
   const index = mockModerationItems.findIndex((item) => item.id === itemId);
   if (index !== -1) {
     mockModerationItems[index].status = 'hidden';
     mockModerationItems[index].updatedAt = new Date().toISOString();
-    recordAction(username, itemId, 'hide_content');
+    recordAction(username, itemId || '', 'hide_content');
   }
 
   return NextResponse.json({ success: true });
 }
 
-function approveContent(body: any, username: string) {
+function approveContent(body: ModerationRequest, username: string): NextResponse {
   const { itemId } = body;
 
   const index = mockModerationItems.findIndex((item) => item.id === itemId);
   if (index !== -1) {
     mockModerationItems[index].status = 'approved';
     mockModerationItems[index].updatedAt = new Date().toISOString();
-    recordAction(username, itemId, 'approve_content');
+    recordAction(username, itemId || '', 'approve_content');
   }
 
   return NextResponse.json({ success: true });
@@ -318,7 +321,7 @@ function recordAction(
   itemId: string,
   action: ModerationActionLog['action'],
   reason?: string
-) {
+): void {
   const item = mockModerationItems.find((entry) => entry.id === itemId);
   mockActionLogs.unshift({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -333,17 +336,17 @@ function recordAction(
   });
 }
 
-function reportContent(body: any, username: string) {
+function reportContent(body: ModerationRequest, _username: string): NextResponse {
   const { itemId, itemType, reason, description, reportedBy, reportedByName } = body;
 
   const newReport: ContentReport = {
     id: Date.now().toString(),
-    itemId,
-    itemType,
-    reportedBy,
-    reportedByName,
-    reason,
-    description,
+    itemId: itemId || '',
+    itemType: (itemType as ContentReport['itemType']) || 'comment',
+    reportedBy: reportedBy || '',
+    reportedByName: reportedByName || '',
+    reason: reason || '',
+    description: description || '',
     status: 'pending',
     createdAt: new Date().toISOString(),
   };
@@ -354,7 +357,8 @@ function reportContent(body: any, username: string) {
   const itemIndex = mockModerationItems.findIndex((item) => item.id === itemId);
   if (itemIndex !== -1) {
     mockModerationItems[itemIndex].isReported = true;
-    mockModerationItems[itemIndex].reportCount = (mockModerationItems[itemIndex].reportCount || 0) + 1;
+    mockModerationItems[itemIndex].reportCount =
+      (mockModerationItems[itemIndex].reportCount || 0) + 1;
   }
 
   return NextResponse.json({ success: true, report: newReport });

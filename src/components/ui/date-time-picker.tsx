@@ -79,14 +79,6 @@ export function DateTimePicker({
         placeholderText={placeholderText}
         customInput={<CustomDateInput id={id} />}
         popperPlacement="bottom-start"
-        popperModifiers={[
-          {
-            name: 'preventOverflow',
-            options: {
-              padding: 8,
-            },
-          },
-        ]}
       />
     </div>
   );

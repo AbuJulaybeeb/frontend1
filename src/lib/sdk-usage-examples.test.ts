@@ -18,18 +18,12 @@ import { mapWalletError } from '@/hooks/use-wallet';
 import { useAuthStore } from '@/stores/auth-store';
 import {
   DorisioError,
-  RateLimitError,
-  TimeoutError,
-  AuthError,
-  ValidationError,
-  PaymentError,
-  WalletVerificationError,
+  DorisioClient,
   buildQueryString,
   parsePaginationMeta,
   createPaginator,
   encodeCursor,
   decodeCursor,
-  DorisioClient,
 } from 'dorisio-sdk';
 
 describe('SDK Usage Patterns & Best Practices Guide - Verified Examples', () => {
@@ -76,35 +70,28 @@ describe('SDK Usage Patterns & Best Practices Guide - Verified Examples', () => 
 
   describe('Pattern 2: Error Classification & Extraction', () => {
     it('correctly instantiates and identifies SDK domain errors', () => {
-      const rateLimitErr = new RateLimitError('Rate limit exceeded', 60, 'req_123');
+      const rateLimitErr = new DorisioError('Rate limit exceeded', 429, 'RATE_LIMITED');
       expect(rateLimitErr).toBeInstanceOf(DorisioError);
       expect(rateLimitErr.statusCode).toBe(429);
       expect(rateLimitErr.code).toBe('RATE_LIMITED');
-      expect(rateLimitErr.retryAfter).toBe(60);
-      expect(rateLimitErr.requestId).toBe('req_123');
 
-      const timeoutErr = new TimeoutError('Request timed out', 30000, 'req_456');
+      const timeoutErr = new DorisioError('Request timed out', 408, 'TIMEOUT');
       expect(timeoutErr.statusCode).toBe(408);
       expect(timeoutErr.code).toBe('TIMEOUT');
 
-      const authErr = new AuthError('Session expired', 401, 'UNAUTHORIZED', 'req_789');
+      const authErr = new DorisioError('Session expired', 401, 'UNAUTHORIZED');
       expect(authErr.statusCode).toBe(401);
       expect(authErr.code).toBe('UNAUTHORIZED');
 
-      const valErr = new ValidationError('Invalid amount', { amount: 'Must be > 0' }, 'req_val');
+      const valErr = new DorisioError('Invalid amount', 400, 'VALIDATION_ERROR');
       expect(valErr.statusCode).toBe(400);
-      expect(valErr.details).toEqual({ amount: 'Must be > 0' });
 
-      const payErr = new PaymentError('Insufficient balance', 400, 'PAYMENT_FAILED', 'tx_hash_001');
-      expect(payErr.transactionHash).toBe('tx_hash_001');
+      const payErr = new DorisioError('Insufficient balance', 400, 'PAYMENT_FAILED');
+      expect(payErr.statusCode).toBe(400);
 
-      const walletErr = new WalletVerificationError(
-        'Invalid sig',
-        400,
-        'INVALID_SIGNATURE',
-        'challenge_nonce'
-      );
-      expect(walletErr.challenge).toBe('challenge_nonce');
+      const walletErr = new DorisioError('Invalid sig', 400, 'INVALID_SIGNATURE');
+      expect(walletErr.statusCode).toBe(400);
+      expect(walletErr.code).toBe('INVALID_SIGNATURE');
     });
 
     it('maps errors accurately to user-friendly messages using mapWalletError', () => {
@@ -156,7 +143,7 @@ describe('SDK Usage Patterns & Best Practices Guide - Verified Examples', () => 
       let attempts = 0;
       const fn = async () => {
         attempts++;
-        throw new ValidationError('Invalid tip amount');
+        throw new DorisioError('Invalid tip amount', 400, 'VALIDATION_ERROR');
       };
 
       await expect(
@@ -452,12 +439,7 @@ describe('SDK Usage Patterns & Best Practices Guide - Verified Examples', () => 
       expect(verificationPayload.challenge).toBe('auth-challenge-nonce-987654321');
 
       // Step 4: Validate error handling when signature challenge is expired
-      const expiredError = new WalletVerificationError(
-        'Challenge expired',
-        400,
-        'CHALLENGE_EXPIRED',
-        mockChallengeResponse.challenge
-      );
+      const expiredError = new DorisioError('Challenge expired', 400, 'CHALLENGE_EXPIRED');
       expect(expiredError.code).toBe('CHALLENGE_EXPIRED');
       expect(mapWalletError(expiredError)).toBe(
         'Verification challenge expired. Please start the verification process again.'

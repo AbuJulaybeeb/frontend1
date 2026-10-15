@@ -23,7 +23,9 @@ import CreatorDashboardPage from '../page';
 
 const replace = vi.fn();
 
-function render(ui: Parameters<typeof testingLibraryRender>[0]) {
+function render(
+  ui: Parameters<typeof testingLibraryRender>[0]
+): ReturnType<typeof testingLibraryRender> {
   return testingLibraryRender(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
@@ -168,7 +170,7 @@ const REALISTIC_TRANSACTIONS = [
 ] as unknown as ReturnType<typeof sdkUseTransactionHistory>['transactions'];
 
 describe('CreatorDashboardPage data loading (#7)', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     useAuthStore.setState({
       user: { id: 'u1', email: 'creator@example.com', username: 'testcreator', role: 'creator' },
@@ -183,7 +185,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('access control', () => {
-    it('redirects away when the viewer is not the dashboard owner', () => {
+    it('redirects away when the viewer is not the dashboard owner', (): void => {
       useAuthStore.setState({
         user: { id: 'u2', email: 'other@example.com', username: 'someoneelse', role: 'creator' },
         token: 'token',
@@ -197,7 +199,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(replace).toHaveBeenCalledWith('/creators/testcreator');
     });
 
-    it('shows Access Denied without a user, and does not attempt to render dashboard data', () => {
+    it('shows Access Denied without a user, and does not attempt to render dashboard data', (): void => {
       useAuthStore.setState({ user: null, token: null, isAuthenticated: false, isLoading: false });
 
       render(<CreatorDashboardPage />);
@@ -208,7 +210,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('loading states', () => {
-    it('shows earnings card skeletons while the balance is loading', () => {
+    it('shows earnings card skeletons while the balance is loading', (): void => {
       vi.mocked(sdkUseCreatorBalance).mockImplementation(() => balanceResult({ loading: true }));
 
       render(<CreatorDashboardPage />);
@@ -216,7 +218,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.getAllByRole('status', { name: /loading earnings/i })).toHaveLength(3);
     });
 
-    it('shows the transaction table skeleton while transactions are loading and none are cached yet', () => {
+    it('shows the transaction table skeleton while transactions are loading and none are cached yet', (): void => {
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ loading: true, transactions: [] })
       );
@@ -228,7 +230,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       ).toBeInTheDocument();
     });
 
-    it('does not show the table skeleton once transactions are cached, even while a refetch is in flight', () => {
+    it('does not show the table skeleton once transactions are cached, even while a refetch is in flight', (): void => {
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ loading: true, transactions: REALISTIC_TRANSACTIONS, total: 2 })
       );
@@ -243,7 +245,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('happy path: data rendering', () => {
-    it('renders earnings figures once the balance loads', () => {
+    it('renders earnings figures once the balance loads', (): void => {
       vi.mocked(sdkUseCreatorBalance).mockImplementation(() =>
         balanceResult({
           balance: { totalEarnings: 1000, pendingBalance: 200 },
@@ -257,7 +259,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.getByText('$200.00')).toBeInTheDocument();
     });
 
-    it('renders realistic transaction rows with sender, amount, status, and tx hash', () => {
+    it('renders realistic transaction rows with sender, amount, status, and tx hash', (): void => {
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ transactions: REALISTIC_TRANSACTIONS, total: 2 })
       );
@@ -272,7 +274,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.getByText('anon-sen...')).toBeInTheDocument();
     });
 
-    it('renders connected wallets', () => {
+    it('renders connected wallets', (): void => {
       vi.mocked(sdkUseWallet).mockImplementation(() =>
         walletResult({
           wallets: [
@@ -295,7 +297,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('verification status', () => {
-    it('shows the creator verification state and details', () => {
+    it('shows the creator verification state and details', (): void => {
       useAuthStore.setState({
         user: {
           id: 'u1',
@@ -320,19 +322,19 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('empty states', () => {
-    it('shows "No transactions yet" once loading finishes with zero results', () => {
+    it('shows "No transactions yet" once loading finishes with zero results', (): void => {
       render(<CreatorDashboardPage />);
       expect(screen.getByText('No transactions yet')).toBeInTheDocument();
     });
 
-    it('shows "No wallets connected yet." with zero wallets', () => {
+    it('shows "No wallets connected yet." with zero wallets', (): void => {
       render(<CreatorDashboardPage />);
       expect(screen.getByText('No wallets connected yet.')).toBeInTheDocument();
     });
   });
 
   describe('error handling', () => {
-    it('shows an earnings error banner and does not render the loading skeleton once the balance request fails', () => {
+    it('shows an earnings error banner and does not render the loading skeleton once the balance request fails', (): void => {
       vi.mocked(sdkUseCreatorBalance).mockImplementation(() =>
         balanceResult({ error: 'Network request failed' })
       );
@@ -345,7 +347,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.queryByRole('status', { name: /loading earnings/i })).not.toBeInTheDocument();
     });
 
-    it('shows a transaction history error banner without crashing the rest of the page', () => {
+    it('shows a transaction history error banner without crashing the rest of the page', (): void => {
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ error: 'Failed to fetch transactions' })
       );
@@ -359,7 +361,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.getByText('Total Earnings')).toBeInTheDocument();
     });
 
-    it('does not show an error banner while a request is still loading, even if a previous error is cached', () => {
+    it('does not show an error banner while a request is still loading, even if a previous error is cached', (): void => {
       vi.mocked(sdkUseCreatorBalance).mockImplementation(() =>
         balanceResult({ error: 'stale error', loading: true })
       );
@@ -371,7 +373,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('pagination (cache/page-state behavior)', () => {
-    it('only shows pagination controls once there is more than one page of results', () => {
+    it('only shows pagination controls once there is more than one page of results', (): void => {
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ transactions: REALISTIC_TRANSACTIONS, total: 2, pageSize: 10 })
       );
@@ -381,7 +383,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();
     });
 
-    it('shows pagination controls and calls goToPage when total exceeds the page size', async () => {
+    it('shows pagination controls and calls goToPage when total exceeds the page size', async (): Promise<void> => {
       const user = userEvent.setup();
       const goToPage = vi.fn();
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
@@ -401,7 +403,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(goToPage).toHaveBeenCalledWith(2);
     });
 
-    it('calls setPageSize when the page-size selector changes', async () => {
+    it('calls setPageSize when the page-size selector changes', async (): Promise<void> => {
       const user = userEvent.setup();
       const setPageSize = vi.fn();
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
@@ -416,7 +418,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('transaction filtering and export (#25)', () => {
-    it('filters the rendered rows when a status filter is applied', async () => {
+    it('filters the rendered rows when a status filter is applied', async (): Promise<void> => {
       const user = userEvent.setup();
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ transactions: REALISTIC_TRANSACTIONS, total: 2 })
@@ -434,7 +436,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.getByText(/Export CSV \(1\)/)).toBeInTheDocument();
     });
 
-    it('shows a no-match message when filters exclude every transaction', async () => {
+    it('shows a no-match message when filters exclude every transaction', async (): Promise<void> => {
       const user = userEvent.setup();
       vi.mocked(sdkUseTransactionHistory).mockImplementation(() =>
         transactionHistoryResult({ transactions: REALISTIC_TRANSACTIONS, total: 2 })
@@ -449,7 +451,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
   });
 
   describe('realtime connection indicator (#11)', () => {
-    it('shows Offline when useRealtimeNotifications reports not connected', async () => {
+    it('shows Offline when useRealtimeNotifications reports not connected', async (): Promise<void> => {
       const { useRealtimeNotifications } = await import('@/hooks/use-realtime-notifications');
       vi.mocked(useRealtimeNotifications).mockReturnValue({
         notifications: [],
@@ -462,7 +464,7 @@ describe('CreatorDashboardPage data loading (#7)', () => {
       expect(screen.getByText('● Offline')).toBeInTheDocument();
     });
 
-    it('shows Live when useRealtimeNotifications reports connected', async () => {
+    it('shows Live when useRealtimeNotifications reports connected', async (): Promise<void> => {
       const { useRealtimeNotifications } = await import('@/hooks/use-realtime-notifications');
       vi.mocked(useRealtimeNotifications).mockReturnValue({
         notifications: [],

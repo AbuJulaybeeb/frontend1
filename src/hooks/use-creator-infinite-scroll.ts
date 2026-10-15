@@ -20,6 +20,7 @@ export interface CreatorSearchFilters {
   minEarnings: string;
   maxEarnings: string;
   sort: CreatorSortOption;
+  page: number;
 }
 
 const DEFAULT_FILTERS: CreatorSearchFilters = {
@@ -29,6 +30,7 @@ const DEFAULT_FILTERS: CreatorSearchFilters = {
   minEarnings: '',
   maxEarnings: '',
   sort: 'trending',
+  page: 1,
 };
 
 const PAGE_SIZE = 20;
@@ -42,6 +44,7 @@ function filtersFromSearchParams(params: URLSearchParams): CreatorSearchFilters 
     minEarnings: params.get('minEarnings') || DEFAULT_FILTERS.minEarnings,
     maxEarnings: params.get('maxEarnings') || DEFAULT_FILTERS.maxEarnings,
     sort: (params.get('sort') as CreatorSortOption) || DEFAULT_FILTERS.sort,
+    page: Number(params.get('page')) || DEFAULT_FILTERS.page,
   };
 }
 
@@ -92,10 +95,7 @@ function applyClientFilters(creators: Creator[], filters: CreatorSearchFilters):
 
 export function useCreatorInfiniteScroll(): {
   filters: CreatorSearchFilters;
-  setFilter: <K extends keyof CreatorSearchFilters>(
-    key: K,
-    value: CreatorSearchFilters[K]
-  ) => void;
+  setFilter: <K extends keyof CreatorSearchFilters>(key: K, value: CreatorSearchFilters[K]) => void;
   resetFilters: () => void;
   creators: Creator[];
   hasNextPage: boolean;
@@ -129,6 +129,7 @@ export function useCreatorInfiniteScroll(): {
       if (filters.minEarnings) params.set('minEarnings', filters.minEarnings);
       if (filters.maxEarnings) params.set('maxEarnings', filters.maxEarnings);
       if (filters.sort !== DEFAULT_FILTERS.sort) params.set('sort', filters.sort);
+      if (filters.page !== DEFAULT_FILTERS.page) params.set('page', String(filters.page));
 
       const query = params.toString();
       router.replace(query ? `?${query}` : '?', { scroll: false });
@@ -138,28 +139,22 @@ export function useCreatorInfiniteScroll(): {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  const {
-    data,
-    isLoading,
-    error,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['creatorsInfinite', filters.verifiedOnly],
-    queryFn: ({ pageParam }) =>
-      sdk.listCreators({
-        page: pageParam,
-        pageSize: PAGE_SIZE,
-        ...(filters.verifiedOnly ? { verified: true } : {}),
-      }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      const total = lastPage?.total || 0;
-      const hasMore = (lastPageParam * PAGE_SIZE) < total;
-      return hasMore ? lastPageParam + 1 : undefined;
-    },
-  });
+  const { data, isLoading, error, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useInfiniteQuery({
+      queryKey: ['creatorsInfinite', filters.verifiedOnly],
+      queryFn: ({ pageParam }) =>
+        sdk.listCreators({
+          page: pageParam,
+          pageSize: PAGE_SIZE,
+          ...(filters.verifiedOnly ? { verified: true } : {}),
+        }),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+        const total = lastPage?.total || 0;
+        const hasMore = lastPageParam * PAGE_SIZE < total;
+        return hasMore ? lastPageParam + 1 : undefined;
+      },
+    });
 
   // Flatten pages and extract creators
   const rawCreators: Creator[] = useMemo(() => {

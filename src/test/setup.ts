@@ -101,7 +101,7 @@ export interface RenderBenchmarkOptions {
 export function benchmarkRender(
   name: string,
   render: () => void,
-  options: RenderBenchmarkOptions = {},
+  options: RenderBenchmarkOptions = {}
 ): RenderBenchmarkResult {
   const { warmUp = 3, iterations = 10, thresholdMs } = options;
 
@@ -118,10 +118,7 @@ export function benchmarkRender(
 
   const sorted = [...samples].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  const medianMs =
-    sorted.length % 2 === 0
-      ? (sorted[mid - 1] + sorted[mid]) / 2
-      : sorted[mid];
+  const medianMs = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 
   const result: RenderBenchmarkResult = {
     name,
@@ -134,7 +131,7 @@ export function benchmarkRender(
   if (typeof thresholdMs === 'number') {
     expect(
       result.medianMs,
-      `[${name}] median render time ${result.medianMs.toFixed(2)}ms exceeds threshold ${thresholdM}ms`,
+      `[${name}] median render time ${result.medianMs.toFixed(2)}ms exceeds threshold ${thresholdMs}ms`
     ).toBeLessThan(thresholdMs);
   }
 
@@ -148,12 +145,12 @@ export function benchmarkRender(
 export function assertNoRegression(
   current: RenderBenchmarkResult,
   baseline: RenderBenchmarkResult,
-  allowedRegressionPercent = 20,
+  allowedRegressionPercent = 20
 ): void {
   const allowedMax = baseline.medianMs * (1 + allowedRegressionPercent / 100);
   expect(
     current.medianMs,
-    `[${current.name}] median ${current.medianMs.toFixed(2)}ms regressed from baseline ${baseline.medianMs.toFixed(2)}ms`,
+    `[${current.name}] median ${current.medianMs.toFixed(2)}ms regressed from baseline ${baseline.medianMs.toFixed(2)}ms`
   ).toBeLessThan(allowedMax);
 }
 

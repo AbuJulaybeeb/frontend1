@@ -34,7 +34,7 @@ import { ExclusiveContentCreatorPanel } from '@/components/sections/exclusive-co
 import { CreatorAnnouncementPanel } from '@/components/sections/creator-announcement-panel';
 import { fetchCreatorAnalytics } from '@/hooks/use-creator-analytics';
 
-export default function CreatorDashboardPage() {
+export default function CreatorDashboardPage(): JSX.Element {
   return (
     <Suspense fallback={null}>
       <CreatorDashboardPageContent />
@@ -42,7 +42,7 @@ export default function CreatorDashboardPage() {
   );
 }
 
-function CreatorDashboardPageContent() {
+function CreatorDashboardPageContent(): JSX.Element {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;

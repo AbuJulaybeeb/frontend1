@@ -64,11 +64,11 @@ describe('CreatorProfilePage', () => {
     createdAt: '2025-01-01T00:00:00.000Z',
   };
 
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
   });
 
-  it('shows the loading state while the profile request is pending', () => {
+  it('shows the loading state while the profile request is pending', (): void => {
     getCreatorProfile.mockReturnValue(new Promise(() => undefined));
 
     render(<CreatorProfilePage />);
@@ -76,7 +76,7 @@ describe('CreatorProfilePage', () => {
     expect(screen.getByRole('status', { name: 'Loading creator profile' })).toBeInTheDocument();
   });
 
-  it('shows a not-found error when profile loading fails', async () => {
+  it('shows a not-found error when profile loading fails', async (): Promise<void> => {
     getCreatorProfile.mockRejectedValue(new Error('Profile unavailable'));
 
     render(<CreatorProfilePage />);
@@ -85,7 +85,7 @@ describe('CreatorProfilePage', () => {
     expect(screen.getByText('Profile unavailable')).toBeInTheDocument();
   });
 
-  it('renders profile data after loading succeeds', async () => {
+  it('renders profile data after loading succeeds', async (): Promise<void> => {
     getCreatorProfile.mockResolvedValue(creator);
 
     render(<CreatorProfilePage />);
@@ -96,7 +96,7 @@ describe('CreatorProfilePage', () => {
     await waitFor(() => expect(getCreatorProfile).toHaveBeenCalledWith('creator-one'));
   });
 
-  it('renders the configured live stream on the creator profile', async () => {
+  it('renders the configured live stream on the creator profile', async (): Promise<void> => {
     getCreatorProfile.mockResolvedValue({
       ...creator,
       liveStream: {

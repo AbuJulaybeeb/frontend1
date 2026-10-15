@@ -3,20 +3,19 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useNotifications } from '@/hooks/use-notifications';
-import { Notification, NotificationType } from '@/types';
+import type { NotificationType } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/utils/formatters';
 import { Check, CheckCheck, Filter } from 'lucide-react';
 
-export default function NotificationsPage() {
+export default function NotificationsPage(): JSX.Element {
   const user = useAuthStore((state) => state.user);
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead, filterByType } =
     useNotifications(user?.id);
   const [selectedType, setSelectedType] = useState<NotificationType | 'all'>('all');
 
-  const filteredNotifications =
-    selectedType === 'all' ? notifications : filterByType(selectedType);
+  const filteredNotifications = selectedType === 'all' ? notifications : filterByType(selectedType);
 
   const types: (NotificationType | 'all')[] = [
     'all',
@@ -27,7 +26,7 @@ export default function NotificationsPage() {
     'system',
   ];
 
-  const getNotificationIcon = (type: NotificationType) => {
+  const getNotificationIcon = (type: NotificationType): string => {
     switch (type) {
       case 'tip':
         return '💰';
@@ -107,7 +106,9 @@ export default function NotificationsPage() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                  <p className="text-xs text-muted-foreground mt-2">{formatDate(notification.createdAt)}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {formatDate(notification.createdAt)}
+                  </p>
                 </div>
               </div>
             </Card>

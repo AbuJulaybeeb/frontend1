@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { MediaItem, ExternalLink } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink as ExternalLinkIcon, Play, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import {
+  ExternalLink as ExternalLinkIcon,
+  Play,
+  Image as ImageIcon,
+  Link as LinkIcon,
+} from 'lucide-react';
 
 interface CreatorPortfolioProps {
   mediaItems?: MediaItem[];
@@ -12,13 +17,26 @@ interface CreatorPortfolioProps {
   isOwner?: boolean;
 }
 
-export function CreatorPortfolio({ mediaItems = [], externalLinks = [], isOwner = false }: CreatorPortfolioProps) {
+export function CreatorPortfolio({
+  mediaItems = [],
+  externalLinks = [],
+  isOwner = false,
+}: CreatorPortfolioProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const categories = ['all', ...new Set(mediaItems.map((item) => item.category).filter(Boolean))];
+  const categories = [
+    'all',
+    ...new Set(
+      mediaItems
+        .map((item) => item.category)
+        .filter((category): category is string => Boolean(category))
+    ),
+  ];
 
   const filteredItems =
-    selectedCategory === 'all' ? mediaItems : mediaItems.filter((item) => item.category === selectedCategory);
+    selectedCategory === 'all'
+      ? mediaItems
+      : mediaItems.filter((item) => item.category === selectedCategory);
 
   const renderMediaItem = (item: MediaItem) => {
     switch (item.type) {
@@ -73,7 +91,9 @@ export function CreatorPortfolio({ mediaItems = [], externalLinks = [], isOwner 
               <LinkIcon className="w-5 h-5 text-muted-foreground mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{item.title || item.url}</p>
-                {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
+                {item.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                )}
               </div>
               <ExternalLinkIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </div>
