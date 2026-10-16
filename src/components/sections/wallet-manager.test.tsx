@@ -68,7 +68,7 @@ function buildHookReturn(overrides: Record<string, unknown> = {}) {
       verified: true,
     },
     loading: false,
-    error: undefined,
+    error: null,
     preferredWallet: null,
     setDefaultWalletId: vi.fn(),
     getPreferredWalletId: vi.fn(),

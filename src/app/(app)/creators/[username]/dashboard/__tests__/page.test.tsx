@@ -49,39 +49,57 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/hooks/use-realtime-notifications', () => ({
   useRealtimeNotifications: vi.fn(() => ({ notifications: [], isConnected: false, error: null })),
 }));
-
 function balanceResult(
-  overrides: Partial<ReturnType<typeof sdkUseCreatorBalance>> = {}
+  overrides: Partial<ReturnType<typeof sdkUseCreatorBalance>> & {
+    error?: string | Error | null;
+  } = {}
 ): ReturnType<typeof sdkUseCreatorBalance> {
   return {
-    balance: undefined,
-    loading: false,
-    error: undefined,
-    fetchBalance: vi.fn(),
-    refetch: vi.fn(),
-    reset: vi.fn(),
-    ...overrides,
+    balance: (overrides as any).balance ?? undefined,
+    loading: (overrides as any).loading ?? false,
+    error:
+      (overrides as any).error !== undefined
+        ? (overrides as any).error instanceof Error
+          ? (overrides as any).error
+          : (overrides as any).error
+            ? new Error(String((overrides as any).error))
+            : null
+        : null,
+    fetchBalance: (overrides as any).fetchBalance ?? vi.fn(),
+    refetch: (overrides as any).refetch ?? vi.fn(),
+    reset: (overrides as any).reset ?? vi.fn(),
   } as unknown as ReturnType<typeof sdkUseCreatorBalance>;
 }
 
 function transactionHistoryResult(
-  overrides: Partial<ReturnType<typeof sdkUseTransactionHistory>> = {}
+  overrides: Partial<ReturnType<typeof sdkUseTransactionHistory>> & {
+    error?: string | Error | null;
+  } = {}
 ): ReturnType<typeof sdkUseTransactionHistory> {
+  const { error: errorOverride, ...rest } = overrides as any;
+  const error =
+    errorOverride !== undefined
+      ? errorOverride instanceof Error
+        ? errorOverride
+        : errorOverride
+          ? new Error(String(errorOverride))
+          : null
+      : null;
+
   return {
-    transactions: [],
-    total: 0,
-    page: 1,
-    pageSize: 10,
-    loading: false,
-    error: undefined,
-    fetchHistory: vi.fn(),
-    goToPage: vi.fn(),
-    nextPage: vi.fn(),
-    prevPage: vi.fn(),
-    setPageSize: vi.fn(),
-    refetch: vi.fn(),
-    reset: vi.fn(),
-    ...overrides,
+    transactions: rest.transactions ?? [],
+    total: rest.total ?? 0,
+    page: rest.page ?? 1,
+    pageSize: rest.pageSize ?? 10,
+    loading: rest.loading ?? false,
+    error,
+    fetchHistory: rest.fetchHistory ?? vi.fn(),
+    goToPage: rest.goToPage ?? vi.fn(),
+    nextPage: rest.nextPage ?? vi.fn(),
+    prevPage: rest.prevPage ?? vi.fn(),
+    setPageSize: rest.setPageSize ?? vi.fn(),
+    refetch: rest.refetch ?? vi.fn(),
+    reset: rest.reset ?? vi.fn(),
   } as unknown as ReturnType<typeof sdkUseTransactionHistory>;
 }
 
