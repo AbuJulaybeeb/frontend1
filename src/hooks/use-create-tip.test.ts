@@ -18,7 +18,6 @@ type SDKCreateTipResult = UseCreateTipState & UseCreateTipActions;
 function makeTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 'tip-123',
-    fromUserId: 'user-1',
     creatorId: 'creator-1',
     amount: 25,
     message: undefined,

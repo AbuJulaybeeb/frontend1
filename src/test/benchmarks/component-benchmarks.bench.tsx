@@ -247,10 +247,13 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
 
 describe('component render performance', () => {
   for (const benchmarkCase of BENCHMARK_CASES) {
-    (globalThis as any).bench(benchmarkCase.name, () => {
-      const { unmount } = render(benchmarkCase.render());
-      unmount();
-    });
+    (globalThis as unknown as Record<string, (name: string, fn: () => void) => void>).bench(
+      benchmarkCase.name,
+      () => {
+        const { unmount } = render(benchmarkCase.render());
+        unmount();
+      }
+    );
   }
 });
 

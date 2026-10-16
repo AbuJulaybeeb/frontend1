@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   useExclusiveContentStore,
   resolveTierLevel,
-  DEFAULT_TIER_THRESHOLDS,
-  type TierLockedContent,
+  // DEFAULT_TIER_THRESHOLDS, // Not used
+  // type TierLockedContent, // Type not used
 } from './exclusive-content-store';
 
 describe('useExclusiveContentStore', () => {

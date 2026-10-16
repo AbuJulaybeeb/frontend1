@@ -1,14 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Lock, Unlock, Sparkles, AlertCircle } from 'lucide-react';
+import { Lock, Unlock, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  type TierLockedContent,
-  useExclusiveContentStore,
-} from '@/stores/exclusive-content-store';
+import { type TierLockedContent, useExclusiveContentStore } from '@/stores/exclusive-content-store';
 
 export interface TierLockedContentCardProps {
   content: TierLockedContent;
@@ -81,13 +78,9 @@ export function TierLockedContentCard({
           )}
         </div>
 
-        <CardTitle className="text-lg font-semibold mt-2 leading-tight">
-          {content.title}
-        </CardTitle>
+        <CardTitle className="text-lg font-semibold mt-2 leading-tight">{content.title}</CardTitle>
         {content.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {content.description}
-          </p>
+          <p className="text-sm text-muted-foreground line-clamp-2">{content.description}</p>
         )}
       </CardHeader>
 
@@ -112,17 +105,21 @@ export function TierLockedContentCard({
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
                 <Lock className="h-5 w-5" />
               </div>
-              <h4 className="font-medium text-sm text-foreground mb-1">
-                Supporter-Only Content
-              </h4>
+              <h4 className="font-medium text-sm text-foreground mb-1">Supporter-Only Content</h4>
               <p className="text-xs text-muted-foreground max-w-xs mb-3">
-                Tip at least <span className="font-semibold text-foreground">${content.requiredAmount}</span> or reach{' '}
-                <span className="capitalize font-semibold text-foreground">{content.requiredTier} tier</span> to unlock permanently.
+                Tip at least{' '}
+                <span className="font-semibold text-foreground">${content.requiredAmount}</span> or
+                reach{' '}
+                <span className="capitalize font-semibold text-foreground">
+                  {content.requiredTier} tier
+                </span>{' '}
+                to unlock permanently.
               </p>
 
               {amountNeeded > 0 && supporterStatus.cumulativeTipped > 0 && (
                 <p className="text-xs text-primary mb-2 font-medium">
-                  You already contributed ${supporterStatus.cumulativeTipped}. Tip ${amountNeeded} more to unlock!
+                  You already contributed ${supporterStatus.cumulativeTipped}. Tip ${amountNeeded}{' '}
+                  more to unlock!
                 </p>
               )}
             </div>

@@ -19,7 +19,7 @@ describe('PWAInstallPrompt', () => {
 
   it('renders when beforeinstallprompt event fires', () => {
     // Mock the event
-    const mockEvent = {
+    const _mockEvent = {
       preventDefault: vi.fn(),
       prompt: vi.fn(),
       userChoice: Promise.resolve({ outcome: 'accepted' }),

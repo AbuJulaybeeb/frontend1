@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+// import { renderHook, act } from '@testing-library/react'; // Not used
 
 /**
  * Domain types for wallet transaction and payment processing flows
@@ -148,10 +148,10 @@ export class WalletTransactionProcessor {
 
       this.transactionHistory.unshift(txRecord);
       return txRecord;
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       // 5. Refund & Reversal Flow upon Failure
       txRecord.status = 'failed';
-      txRecord.error = err.message;
+      txRecord.error = err instanceof Error ? err.message : String(err);
 
       // Revert optimistic sender balance deductions
       this.senderWallet.availableBalance += totalDeduction;

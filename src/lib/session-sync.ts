@@ -103,7 +103,9 @@ export function broadcastSessionEvent<T = unknown>(type: SessionEventType, paylo
 /**
  * Parses persisted auth state from localStorage safely.
  */
-export function readPersistedAuthState(): { state?: { token: string | null; user: unknown } } | null {
+export function readPersistedAuthState(): {
+  state?: { token: string | null; user: unknown };
+} | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
@@ -153,7 +155,10 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
       }
 
       case 'LOGIN': {
-        const { user, token } = (message.payload || {}) as { user: any; token: string };
+        const { user, token } = (message.payload || {}) as {
+          user: Record<string, unknown>;
+          token: string;
+        };
         if (token && user) {
           isBroadcasting = true;
           try {
@@ -172,7 +177,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
       }
 
       case 'UPDATE_USER': {
-        const { user } = (message.payload || {}) as { user: any };
+        const { user } = (message.payload || {}) as { user: Record<string, unknown> };
         if (user) {
           isBroadcasting = true;
           try {
@@ -194,7 +199,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
           if (parsed?.state?.token && parsed?.state?.user) {
             updateSDKToken(parsed.state.token);
             store.setState({
-              user: parsed.state.user as any,
+              user: parsed.state.user as Record<string, unknown>,
               token: parsed.state.token,
               isAuthenticated: true,
               isLoading: false,

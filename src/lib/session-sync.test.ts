@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   initSessionSync,
   cleanupSessionSync,
-  broadcastSessionEvent,
+  // broadcastSessionEvent, // Not used in tests
   getTabId,
   readPersistedAuthState,
   AUTH_STORAGE_KEY,
   LOGOUT_EVENT_STORAGE_KEY,
-  SESSION_CHANNEL_NAME,
+  // SESSION_CHANNEL_NAME, // Not used in tests
   type SessionSyncMessage,
 } from './session-sync';
 
@@ -17,8 +17,8 @@ vi.mock('@/lib/sdk-client', () => ({
 }));
 
 describe('Session Sync and Cross-Tab State Persistence', () => {
-  let mockStore: any;
-  let mockState: any;
+  let mockStore: Record<string, unknown>;
+  let mockState: Record<string, unknown>;
   let broadcastCallbacks: ((event: MessageEvent<SessionSyncMessage>) => void)[] = [];
   let storageCallbacks: ((event: StorageEvent) => void)[] = [];
 
@@ -33,7 +33,7 @@ describe('Session Sync and Cross-Tab State Persistence', () => {
       });
     }
 
-    postMessage(data: any) {
+    postMessage(data: SessionSyncMessage): void {
       // Simulate dispatching to other tabs asynchronously with ultra-low latency (<10ms)
       broadcastCallbacks.forEach((cb) => {
         cb(new MessageEvent('message', { data }));
@@ -48,7 +48,7 @@ describe('Session Sync and Cross-Tab State Persistence', () => {
     storageCallbacks = [];
 
     // Mock global BroadcastChannel
-    (global as any).BroadcastChannel = MockBroadcastChannel;
+    (global as unknown as Record<string, unknown>).BroadcastChannel = MockBroadcastChannel;
 
     // Mock store
     mockState = {
@@ -60,23 +60,27 @@ describe('Session Sync and Cross-Tab State Persistence', () => {
 
     mockStore = {
       getState: vi.fn(() => mockState),
-      setState: vi.fn((patch: any) => {
+      setState: vi.fn((patch: Record<string, unknown>) => {
         mockState = { ...mockState, ...patch };
       }),
     };
 
     // Mock window storage listener
-    vi.spyOn(window, 'addEventListener').mockImplementation((event: string, handler: any) => {
+    vi.spyOn(window, 'addEventListener').mockImplementation((event: string, handler: unknown) => {
       if (event === 'storage') {
-        storageCallbacks.push(handler);
+        storageCallbacks.push(handler as (event: StorageEvent) => void);
       }
     });
 
-    vi.spyOn(window, 'removeEventListener').mockImplementation((event: string, handler: any) => {
-      if (event === 'storage') {
-        storageCallbacks = storageCallbacks.filter((h) => h !== handler);
+    vi.spyOn(window, 'removeEventListener').mockImplementation(
+      (event: string, handler: unknown) => {
+        if (event === 'storage') {
+          storageCallbacks = storageCallbacks.filter(
+            (h) => h !== (handler as (event: StorageEvent) => void)
+          );
+        }
       }
-    });
+    );
 
     localStorage.clear();
     sessionStorage.clear();
