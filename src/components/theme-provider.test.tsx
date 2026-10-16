@@ -73,6 +73,22 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.classList.contains('light')).toBe(true);
   });
 
+  it('falls back to the system preference when stored theme data is invalid', async () => {
+    mockMatchMedia(true);
+    localStorage.setItem(THEME_STORAGE_KEY, 'sepia');
+
+    render(
+      <ThemeProvider>
+        <Consumer />
+      </ThemeProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId('theme').textContent).toBe('system'));
+    expect(screen.getByTestId('resolved-theme').textContent).toBe('dark');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.classList.contains('sepia')).toBe(false);
+  });
+
   it('switches themes, updates the document class, and persists to localStorage', async () => {
     const user = userEvent.setup();
 
