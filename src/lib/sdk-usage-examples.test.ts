@@ -96,7 +96,7 @@ describe('SDK Usage Patterns & Best Practices Guide - Verified Examples', () => 
       );
 
       const timeoutErr = new Error('request timed out');
-      (timeoutErr as any).code = 'TIMEOUT';
+      (timeoutErr as unknown as Record<string, string>).code = 'TIMEOUT';
       expect(mapWalletError(timeoutErr)).toBe('The request timed out. Please try again.');
 
       const rateLimitErr = new Error('Too many requests');

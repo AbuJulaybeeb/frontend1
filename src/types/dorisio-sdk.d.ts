@@ -11,7 +11,18 @@ declare module 'dorisio-sdk' {
     network?: string;
     horizonUrl?: string;
     baseUrl?: string;
-    [key: string]: any;
+    [key: string]: unknown;
+  }
+
+  export interface Notification {
+    id: string;
+    userId: string;
+    type: 'tip' | 'subscription' | 'milestone' | 'system' | 'collaboration' | 'commission';
+    title: string;
+    message: string;
+    read: boolean;
+    createdAt: string;
+    data?: Record<string, unknown>;
   }
 
   export interface CreateTipRequest {
@@ -45,7 +56,7 @@ declare module 'dorisio-sdk' {
       pending: number;
       total: number;
     };
-    [key: string]: any;
+    [key: string]: unknown;
   }
 
   export class DorisioError extends Error {
@@ -55,18 +66,27 @@ declare module 'dorisio-sdk' {
     constructor(message: string, statusCode?: number, code?: string, requestId?: string);
   }
 
+  export interface CreatorListResponse {
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    creators?: unknown[];
+    data?: unknown[];
+  }
+
   export class DorisioClient {
     constructor(config?: ClientConfig);
     setToken(token: string | null): void;
     clearToken(): void;
     getConfig(): ClientConfig;
-    getCreatorProfile(username: string): Promise<any>;
+    getCreatorProfile(username: string): Promise<unknown>;
     createTip(payload: CreateTipRequest): Promise<Transaction>;
-    listCreators(params?: any): Promise<any>;
-    getNotifications(params?: any): Promise<any>;
-    markNotificationAsRead(id: string): Promise<any>;
-    markAllNotificationsAsRead(arg?: any): Promise<any>;
-    [key: string]: any;
+    listCreators(params?: Record<string, unknown>): Promise<CreatorListResponse>;
+    getNotifications(userIdOrParams?: string | Record<string, unknown>): Promise<Notification[]>;
+    markNotificationAsRead(id: string): Promise<unknown>;
+    markAllNotificationsAsRead(userIdOrParams?: string | Record<string, unknown>): Promise<unknown>;
+    isTransactionVerified(transactionId: string): Promise<boolean>;
+    [key: string]: unknown;
   }
 }
 
@@ -84,7 +104,7 @@ declare module 'dorisio-sdk/react' {
   export function useDorisio(): {
     client: DorisioClient;
     isConnected?: boolean;
-    setError?: (err: any) => void;
+    setError?: (err: Error) => void;
     setIsLoading?: (loading: boolean) => void;
   };
 
@@ -92,30 +112,32 @@ declare module 'dorisio-sdk/react' {
     wallets: Wallet[];
     selectedWallet?: Wallet | null;
     loading: boolean;
-    error: any;
+    error: Error | null;
     generateNonce: () => Promise<string>;
     getChallenge: (publicKey: string) => Promise<string>;
-    verifyWallet: (publicKey: any, signature?: any) => Promise<boolean>;
+    verifyWallet: (publicKey: string, signature?: string) => Promise<boolean>;
     listWallets: () => Promise<Wallet[]>;
-    selectWallet: (walletId: any) => void;
+    selectWallet: (walletIdOrWallet: string | Wallet) => void;
     unlinkWallet: (walletId: string) => Promise<void>;
     renameWallet: (walletId: string, name: string) => Promise<Wallet>;
-    getBalance: (walletId?: string) => Promise<any>;
+    getBalance: (
+      walletId?: string
+    ) => Promise<{ available: number; pending: number; total: number }>;
     reset: () => void;
   };
 
   export interface UseCreateTipActions {
     createTip: (req: CreateTipRequest) => Promise<Transaction>;
-    buildTransaction: () => Promise<any>;
-    submitTransaction: () => Promise<any>;
-    confirmTransaction: () => Promise<any>;
+    buildTransaction: () => Promise<unknown>;
+    submitTransaction: () => Promise<unknown>;
+    confirmTransaction: () => Promise<unknown>;
     reset: () => void;
   }
 
   export interface UseCreateTipState {
     data?: Transaction | null;
     loading: boolean;
-    error: any;
+    error: Error | null;
     step?: string;
   }
 
@@ -127,25 +149,25 @@ declare module 'dorisio-sdk/react' {
       pendingBalance?: number;
     } | null;
     loading: boolean;
-    error: any;
-    fetchBalance: (creatorId: string) => Promise<any>;
-    refetch?: () => Promise<any>;
+    error: Error | null;
+    fetchBalance: (creatorId: string) => Promise<unknown>;
+    refetch?: () => Promise<unknown>;
     reset?: () => void;
   };
 
   export function useTransactionHistory(params?: { page?: number; pageSize?: number }): {
-    transactions: any[];
+    transactions: Transaction[];
     total: number;
     page: number;
     pageSize: number;
     loading: boolean;
-    error: any;
-    fetchHistory: () => Promise<any>;
+    error: Error | null;
+    fetchHistory: () => Promise<unknown>;
     goToPage: (page: number) => void;
     nextPage: () => void;
     prevPage: () => void;
     setPageSize: (size: number) => void;
-    refetch: () => Promise<any>;
+    refetch: () => Promise<unknown>;
     reset: () => void;
   };
 }

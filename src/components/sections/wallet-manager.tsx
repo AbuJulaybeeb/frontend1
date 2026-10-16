@@ -74,7 +74,11 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
   // -------------------------------------------------------------------------
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8" role="status" aria-label="Loading wallets">
+      <div
+        className="flex items-center justify-center p-8"
+        role="status"
+        aria-label="Loading wallets"
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-sm text-muted-foreground">Loading wallets...</p>
@@ -94,7 +98,7 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold">Error loading wallets</p>
-            <p className="text-sm">{error}</p>
+            <p className="text-sm">{error?.message || 'Unknown error'}</p>
           </div>
         </div>
       </div>
@@ -160,7 +164,10 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
                       aria-live="polite"
                       data-testid={`wallet-error-${wallet.id}`}
                     >
-                      <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <AlertCircle
+                        className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span>{walletError}</span>
                       <button
                         onClick={(e) => {

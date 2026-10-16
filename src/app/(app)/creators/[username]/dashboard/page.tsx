@@ -172,7 +172,7 @@ function CreatorDashboardPageContent(): JSX.Element {
           className="p-4 border border-red-200 bg-red-50 rounded-lg text-sm text-red-700"
           role="alert"
         >
-          Unable to load earnings: {balanceError}
+          Unable to load earnings: {balanceError?.message || 'Unknown error'}
         </div>
       )}
       {balanceLoading ? (
@@ -239,7 +239,7 @@ function CreatorDashboardPageContent(): JSX.Element {
             className="p-4 border border-red-200 bg-red-50 rounded-lg text-sm text-red-700"
             role="alert"
           >
-            Unable to load transaction history: {transactionsError}
+            Unable to load transaction history: {transactionsError?.message || 'Unknown error'}
           </div>
         )}
         {transactionsLoading && transactions.length === 0 ? (
