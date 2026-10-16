@@ -5,7 +5,7 @@
  * Displays scheduled and recurring tips with live countdowns, edit, cancel, and execution controls
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,8 @@ export function ScheduledTipsDashboard({ creatorId }: ScheduledTipsDashboardProp
   const [editMessage, setEditMessage] = useState<string>('');
   const [editError, setEditError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const saveEditInProgress = useRef(false);
 
   const showStatus = (msg: string): void => {
     setActionSuccess(msg);
@@ -68,7 +70,7 @@ export function ScheduledTipsDashboard({ creatorId }: ScheduledTipsDashboardProp
 
   const handleSaveEdit = (e: React.FormEvent): void => {
     e.preventDefault();
-    if (!editingTip) return;
+    if (!editingTip || saveEditInProgress.current) return;
 
     const amountNum = parseFloat(editAmount.trim());
     if (isNaN(amountNum) || amountNum <= 0) {
@@ -86,18 +88,25 @@ export function ScheduledTipsDashboard({ creatorId }: ScheduledTipsDashboardProp
       return;
     }
 
-    const success = editScheduledTip(editingTip.id, {
-      amount: amountNum,
-      scheduledDate: editDate,
-      frequency: editFrequency,
-      message: editMessage || undefined,
-    });
+    saveEditInProgress.current = true;
+    setSavingEdit(true);
+    try {
+      const success = editScheduledTip(editingTip.id, {
+        amount: amountNum,
+        scheduledDate: editDate,
+        frequency: editFrequency,
+        message: editMessage || undefined,
+      });
 
-    if (success) {
-      showStatus(`Updated scheduled tip to $${amountNum}`);
-      setEditingTip(null);
-    } else {
-      setEditError('Failed to update scheduled tip.');
+      if (success) {
+        showStatus(`Updated scheduled tip to $${amountNum}`);
+        setEditingTip(null);
+      } else {
+        setEditError('Failed to update scheduled tip.');
+      }
+    } finally {
+      saveEditInProgress.current = false;
+      setSavingEdit(false);
     }
   };
 
@@ -115,7 +124,9 @@ export function ScheduledTipsDashboard({ creatorId }: ScheduledTipsDashboardProp
     }
   };
 
-  const getFrequencyBadgeVariant = (freq: ScheduledTipFrequency): 'default' | 'secondary' | 'outline' => {
+  const getFrequencyBadgeVariant = (
+    freq: ScheduledTipFrequency
+  ): 'default' | 'secondary' | 'outline' => {
     switch (freq) {
       case 'daily':
         return 'secondary';
@@ -248,8 +259,8 @@ export function ScheduledTipsDashboard({ creatorId }: ScheduledTipsDashboardProp
               <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit}>
                 Cancel
               </Button>
-              <Button type="submit" size="sm">
-                Save Changes
+              <Button type="submit" size="sm" disabled={savingEdit}>
+                {savingEdit ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -287,7 +298,10 @@ export function ScheduledTipsDashboard({ creatorId }: ScheduledTipsDashboardProp
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-bold text-lg">{formatCurrency(tip.amount)}</span>
-                    <Badge variant={getFrequencyBadgeVariant(tip.frequency)} className="capitalize text-xs">
+                    <Badge
+                      variant={getFrequencyBadgeVariant(tip.frequency)}
+                      className="capitalize text-xs"
+                    >
                       {tip.frequency}
                     </Badge>
                     <Badge

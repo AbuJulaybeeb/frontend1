@@ -5,7 +5,7 @@
  * Allows creators to configure suggested tip presets in their dashboard
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,8 @@ export function TipTierSettings({ creatorId }: TipTierSettingsProps): JSX.Elemen
   const [newTierAmount, setNewTierAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInProgress = useRef(false);
 
   const showNotification = (message: string): void => {
     setSuccessMessage(message);
@@ -33,6 +35,7 @@ export function TipTierSettings({ creatorId }: TipTierSettingsProps): JSX.Elemen
 
   const handleAddTier = (e?: React.FormEvent): void => {
     if (e) e.preventDefault();
+    if (submissionInProgress.current) return;
     const amount = parseFloat(newTierAmount.trim());
 
     if (isNaN(amount) || amount <= 0) {
@@ -50,10 +53,17 @@ export function TipTierSettings({ creatorId }: TipTierSettingsProps): JSX.Elemen
       return;
     }
 
-    addTier(amount);
-    setNewTierAmount('');
-    setError(null);
-    showNotification(`Added $${amount} to preset tiers`);
+    submissionInProgress.current = true;
+    setIsSubmitting(true);
+    try {
+      addTier(amount);
+      setNewTierAmount('');
+      setError(null);
+      showNotification(`Added $${amount} to preset tiers`);
+    } finally {
+      submissionInProgress.current = false;
+      setIsSubmitting(false);
+    }
   };
 
   const handleRemoveTier = (amount: number): void => {
@@ -153,8 +163,8 @@ export function TipTierSettings({ creatorId }: TipTierSettingsProps): JSX.Elemen
               />
             </div>
           </div>
-          <Button type="submit" className="w-full sm:w-auto">
-            Add Preset Tier
+          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+            {isSubmitting ? 'Adding...' : 'Add Preset Tier'}
           </Button>
         </div>
         {error && (
