@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  CreatorSearchBar,
-  RECENT_SEARCHES_KEY,
-} from './creator-search-bar';
+import { CreatorSearchBar, RECENT_SEARCHES_KEY } from './creator-search-bar';
 import type { CreatorSearchFilters } from '@/hooks/use-creator-search';
 import type { Creator } from '@/types';
 
 const baseFilters: CreatorSearchFilters = {
+  category: '',
   search: '',
   verifiedOnly: false,
   minEarnings: '',
@@ -235,9 +233,7 @@ describe('CreatorSearchBar', () => {
         vi.advanceTimersByTime(300);
       });
 
-      expect(
-        screen.getByText(/No creators found for “nonexistent-person”/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No creators found for “nonexistent-person”/i)).toBeInTheDocument();
     });
 
     it('selecting a suggestion calls onChange, onSelectCreator, and closes dropdown', () => {

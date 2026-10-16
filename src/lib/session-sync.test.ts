@@ -17,7 +17,12 @@ vi.mock('@/lib/sdk-client', () => ({
 }));
 
 describe('Session Sync and Cross-Tab State Persistence', () => {
-  let mockStore: Record<string, unknown>;
+  interface MockStore {
+    getState: () => Record<string, unknown>;
+    setState: (patch: Record<string, unknown>) => void;
+  }
+
+  let mockStore: MockStore;
   let mockState: Record<string, unknown>;
   let broadcastCallbacks: ((event: MessageEvent<SessionSyncMessage>) => void)[] = [];
   let storageCallbacks: ((event: StorageEvent) => void)[] = [];
@@ -52,7 +57,7 @@ describe('Session Sync and Cross-Tab State Persistence', () => {
 
     // Mock store
     mockState = {
-      user: { id: 'user_1', email: 'test@example.com', role: 'fan' },
+      user: { id: 'user_1', email: 'test@example.com', role: 'fan' as const },
       token: 'jwt_token_123',
       isAuthenticated: true,
       isLoading: false,
@@ -165,7 +170,7 @@ describe('Session Sync and Cross-Tab State Persistence', () => {
   it('syncs user profile update across tabs', () => {
     initSessionSync(mockStore);
 
-    const updatedUser = { ...mockState.user, name: 'Alice Wonder' };
+    const updatedUser = { ...(mockState.user as Record<string, unknown>), name: 'Alice Wonder' };
 
     const updateMsg: SessionSyncMessage = {
       type: 'UPDATE_USER',

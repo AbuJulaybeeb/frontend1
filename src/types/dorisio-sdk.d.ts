@@ -49,8 +49,10 @@ declare module 'dorisio-sdk' {
   }
 
   export class DorisioError extends Error {
+    statusCode?: number;
     code?: string;
-    constructor(message: string, code?: string);
+    requestId?: string;
+    constructor(message: string, statusCode?: number, code?: string, requestId?: string);
   }
 
   export class DorisioClient {

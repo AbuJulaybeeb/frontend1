@@ -121,7 +121,14 @@ export function readPersistedAuthState(): {
  * Initializes cross-tab session synchronization on the given auth store.
  * Subscribes to BroadcastChannel and window storage events.
  */
-export function initSessionSync(store: typeof useAuthStore): () => void {
+export function initSessionSync(
+  store:
+    | typeof useAuthStore
+    | {
+        getState: () => Record<string, unknown>;
+        setState: (patch: Record<string, unknown>) => void;
+      }
+): () => void {
   if (typeof window === 'undefined') {
     return () => {};
   }
@@ -136,7 +143,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
 
     switch (message.type) {
       case 'LOGOUT': {
-        const state = store.getState();
+        const state = store.getState() as Record<string, unknown>;
         if (state.isAuthenticated || state.token || state.user) {
           isBroadcasting = true;
           try {
@@ -146,7 +153,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
               token: null,
               isAuthenticated: false,
               isLoading: false,
-            });
+            } as Record<string, unknown>);
           } finally {
             isBroadcasting = false;
           }
@@ -168,7 +175,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
               token,
               isAuthenticated: true,
               isLoading: false,
-            });
+            } as Record<string, unknown>);
           } finally {
             isBroadcasting = false;
           }
@@ -184,7 +191,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
             store.setState({
               user,
               isAuthenticated: !!user,
-            });
+            } as Record<string, unknown>);
           } finally {
             isBroadcasting = false;
           }
@@ -203,7 +210,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
               token: parsed.state.token,
               isAuthenticated: true,
               isLoading: false,
-            });
+            } as Record<string, unknown>);
           } else {
             updateSDKToken(null);
             store.setState({
@@ -211,7 +218,7 @@ export function initSessionSync(store: typeof useAuthStore): () => void {
               token: null,
               isAuthenticated: false,
               isLoading: false,
-            });
+            } as Record<string, unknown>);
           }
         } finally {
           isBroadcasting = false;

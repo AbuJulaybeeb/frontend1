@@ -51,8 +51,8 @@ export function EarningsTrendChart({ data }: EarningsTrendChartProps): JSX.Eleme
             width={64}
           />
           <Tooltip
-            formatter={(value) => [formatCurrency(Number(value)), 'Earnings']}
-            labelFormatter={(label) => (label ? formatDate(String(label)) : '')}
+            formatter={(value: unknown) => [formatCurrency(Number(value)), 'Earnings']}
+            labelFormatter={(label: unknown) => (label ? formatDate(String(label)) : '')}
             contentStyle={{
               backgroundColor: '#1a1a1a',
               border: '1px solid #2a2a2a',

@@ -49,7 +49,10 @@ export function TipSourceBreakdown({ data }: TipSourceBreakdownProps): JSX.Eleme
             ))}
           </Pie>
           <Tooltip
-            formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
+            formatter={(value: unknown, name: unknown) => [
+              formatCurrency(Number(value)),
+              String(name),
+            ]}
             contentStyle={{
               backgroundColor: '#1a1a1a',
               border: '1px solid #2a2a2a',

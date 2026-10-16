@@ -85,6 +85,7 @@ export interface BenchmarkCase {
 const noop = () => {};
 
 const SEARCH_FILTERS: CreatorSearchFilters = {
+  category: '',
   search: '',
   verifiedOnly: false,
   minEarnings: '',

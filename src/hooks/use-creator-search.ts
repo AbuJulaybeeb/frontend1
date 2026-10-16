@@ -21,12 +21,12 @@ import type { Creator } from '@/types';
 export type CreatorSortOption = 'trending' | 'newest' | 'alphabetical' | 'earnings';
 
 export interface CreatorSearchFilters {
+  category: string;
   search: string;
   verifiedOnly: boolean;
   minEarnings: string;
   maxEarnings: string;
   sort: CreatorSortOption;
-  category?: string;
   page: number;
 }
 
@@ -161,10 +161,7 @@ export function useCreatorSearch(): {
       }),
   });
 
-  const rawCreators: Creator[] = useMemo(
-    () => (data?.creators || []) as Creator[],
-    [data]
-  );
+  const rawCreators: Creator[] = useMemo(() => (data?.creators || []) as Creator[], [data]);
 
   const creators = useMemo(
     () => applyClientFilters(rawCreators, { ...filters, search: debouncedSearch }),

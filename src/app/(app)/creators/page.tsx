@@ -25,7 +25,7 @@ export default function CreatorDiscoveryPage(): JSX.Element {
 
 function CreatorDiscoveryPageContent(): JSX.Element {
   const { filters, setFilter, resetFilters, creators, isLoading, error } =
-    useCreatorInfiniteScroll() as any;
+    useCreatorInfiniteScroll();
 
   // Calculate total pages - using 20 items per page (PAGE_SIZE)
   const PAGE_SIZE = 20;
