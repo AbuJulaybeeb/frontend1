@@ -1,9 +1,9 @@
 name: Lighthouse performance
 
+# TEMPORARILY DISABLED DURING WAVE CONTRIBUTION PERIOD
+# To re-enable: restore the original on trigger below
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   lighthouse:
