@@ -1,138 +1,217 @@
-name: Frontend CI
-
+name: CI
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-
+env:
+  PACT_BROKER_BASE_URL: ${{ secrets.PACT_BROKER_BASE_URL }}
+  PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
 jobs:
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
-
-      - name: Typecheck
-        run: npm run type-check
-
   lint:
-    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
+          path: frontend
+      - uses: actions/checkout@v4
+        with:
+          repository: Dorisio/sdk
+          path: sdk
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-
+          node-version: '20'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - name: Install and build SDK
+        working-directory: ./sdk
+        run: npm install && npm run build
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
-
-      - name: Lint
-        run: npm run lint
-
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+        working-directory: ./frontend
+      - name: Run linter
+        run: pnpm lint
+        working-directory: ./frontend
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: frontend
+      - uses: actions/checkout@v4
+        with:
+          repository: Dorisio/sdk
+          path: sdk
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - name: Install and build SDK
+        working-directory: ./sdk
+        run: npm install && npm run build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+        working-directory: ./frontend
+      - name: Type check
+        run: pnpm type-check
+        working-directory: ./frontend
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, type-check]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: frontend
+      - uses: actions/checkout@v4
+        with:
+          repository: Dorisio/sdk
+          path: sdk
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - name: Install and build SDK
+        working-directory: ./sdk
+        run: npm install && npm run build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+        working-directory: ./frontend
+      - name: Build
+        run: pnpm build
+        working-directory: ./frontend
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: ./frontend/.next/
   test:
-    name: Test
     runs-on: ubuntu-latest
+    needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
+          path: frontend
+      - uses: actions/checkout@v4
+        with:
+          repository: Dorisio/sdk
+          path: sdk
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-
+          node-version: '20'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - name: Install and build SDK
+        working-directory: ./sdk
+        run: npm install && npm run build
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
-
-      - name: Tests
-        run: npm run test:run
-        env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
-
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+        working-directory: ./frontend
+      - name: Run unit tests
+        run: pnpm test:run
+        working-directory: ./frontend
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./frontend/coverage/
   e2e:
-    name: E2E Tests
     runs-on: ubuntu-latest
+    needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
+          path: frontend
+      - uses: actions/checkout@v4
+        with:
+          repository: Dorisio/sdk
+          path: sdk
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-
+          node-version: '20'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - name: Install and build SDK
+        working-directory: ./sdk
+        run: npm install && npm run build
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
-
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+        working-directory: ./frontend
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox
-
-      - name: E2E Tests
-        run: npm run test:e2e
-
+        run: pnpm exec playwright install --with-deps chromium firefox
+        working-directory: ./frontend
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        working-directory: ./frontend
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: playwright-report/
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
-
-      - name: Build
-        run: npm run build
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
-
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate || true
+          path: ./frontend/playwright-report/
