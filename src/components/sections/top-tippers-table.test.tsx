@@ -46,4 +46,53 @@ describe('TopTippersTable', () => {
     expect(screen.queryByTestId('top-tippers-table')).not.toBeInTheDocument();
     expect(screen.getByText(/no tippers for this period/i)).toBeInTheDocument();
   });
+
+  // The reflow itself is verified in a real browser
+  // (e2e/mobile-responsive.spec.ts). These assertions cover the hooks that
+  // layout depends on: the reflow class, the scoped scroll region, and the
+  // `data-label` that becomes the column name once the rows are stacked.
+  describe('responsive markup (#168)', () => {
+    it('opts into the responsive reflow class', () => {
+      render(<TopTippersTable data={sampleData} />);
+
+      const table = screen.getByTestId('top-tippers-table').querySelector('table');
+      expect(table).toHaveClass('responsive-table');
+    });
+
+    it('scopes horizontal scrolling to the table so the page never scrolls sideways', () => {
+      render(<TopTippersTable data={sampleData} />);
+
+      expect(screen.getByTestId('top-tippers-table')).toHaveClass('overflow-x-auto');
+    });
+
+    it('names every column on every cell so none of them is dropped on mobile', () => {
+      render(<TopTippersTable data={sampleData} />);
+
+      const root = screen.getByTestId('top-tippers-table');
+      const headerLabels = Array.from(root.querySelectorAll('thead th')).map(
+        (cell) => cell.textContent
+      );
+      const firstRowLabels = Array.from(
+        root.querySelectorAll('tbody tr:first-child td')
+      ).map((cell) => cell.getAttribute('data-label'));
+
+      expect(headerLabels).toEqual([
+        'Rank',
+        'Tipper',
+        'Total Tipped',
+        'Tips',
+        'Last Tip',
+        'Latest Message',
+      ]);
+      expect(firstRowLabels).toEqual(headerLabels);
+    });
+
+    it('describes the table contents for assistive technology', () => {
+      render(<TopTippersTable data={sampleData} />);
+
+      expect(
+        screen.getByText(/top tippers for this period, ranked by total amount tipped/i)
+      ).toBeInTheDocument();
+    });
+  });
 });

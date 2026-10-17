@@ -233,7 +233,13 @@ function CreatorDashboardPageContent(): JSX.Element {
           resultCount={filteredTransactions.length}
         />
 
-        {/* Table */}
+        {/*
+          Table. Mobile-first: `responsive-table` (src/app/globals.css) reflows
+          each row into a stacked card below the `md` breakpoint and prints the
+          column name from every cell's `data-label`. No column is removed, so
+          the amount and the date stay on screen on a phone and the page never
+          scrolls sideways.
+        */}
         {transactionsError && !transactionsLoading && (
           <div
             className="p-4 border border-red-200 bg-red-50 rounded-lg text-sm text-red-700"
@@ -246,15 +252,31 @@ function CreatorDashboardPageContent(): JSX.Element {
           <TransactionTableSkeleton />
         ) : (
           <div className="border rounded-lg overflow-x-auto animate-fade-in">
-            <table className="w-full text-sm">
+            <table className="responsive-table w-full text-sm">
+              <caption className="sr-only">
+                Transaction history with the amount, date, sender, message, status, and
+                transaction id for each entry.
+              </caption>
               <thead className="border-b bg-muted/50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Date</th>
-                  <th className="px-4 py-3 text-left font-semibold">Amount</th>
-                  <th className="px-4 py-3 text-left font-semibold">From</th>
-                  <th className="px-4 py-3 text-left font-semibold">Message</th>
-                  <th className="px-4 py-3 text-left font-semibold">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold">Tx ID</th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Date
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Amount
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    From
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Message
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Tx ID
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -269,12 +291,19 @@ function CreatorDashboardPageContent(): JSX.Element {
                 ) : (
                   filteredTransactions.map((tx) => (
                     <tr key={tx.id} className="border-b hover:bg-muted/30 transition">
-                      <td className="px-4 py-3">{formatDate(tx.createdAt)}</td>
-                      <td className="px-4 py-3 font-semibold">{formatCurrency(tx.amount)}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground truncate">
+                      <td data-label="Date" className="px-4 py-3">
+                        {formatDate(tx.createdAt)}
+                      </td>
+                      <td data-label="Amount" className="px-4 py-3 font-semibold">
+                        {formatCurrency(tx.amount)}
+                      </td>
+                      <td
+                        data-label="From"
+                        className="px-4 py-3 text-sm text-muted-foreground truncate"
+                      >
                         {tx.senderUsername || `${(tx.senderId || '').slice(0, 8)}...`}
                       </td>
-                      <td className="px-4 py-3 min-w-56">
+                      <td data-label="Message" className="px-4 py-3 min-w-56">
                         {tx.message ? (
                           <p className="max-w-xs truncate text-sm" title={tx.message}>
                             {tx.message}
@@ -283,7 +312,7 @@ function CreatorDashboardPageContent(): JSX.Element {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Status" className="px-4 py-3">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
                             tx.status
@@ -292,7 +321,10 @@ function CreatorDashboardPageContent(): JSX.Element {
                           {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground truncate">
+                      <td
+                        data-label="Tx ID"
+                        className="px-4 py-3 text-xs text-muted-foreground truncate"
+                      >
                         {tx.transactionHash ? (
                           <div className="space-y-1">
                             <a
