@@ -266,6 +266,23 @@ describe('DorisioButton (Send Tip flow)', () => {
     expect(screen.getByTestId('wallet-select')).toBeInTheDocument();
   });
 
+  it('closes tip modal when Escape key is pressed', async () => {
+    const user = userEvent.setup();
+    render(<DorisioButton creatorId="creator-1" />);
+
+    await user.click(screen.getByRole('button', { name: /send a tip/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
   it('auto-selects preferred wallet when modal opens', async () => {
     const user = userEvent.setup();
     render(<DorisioButton creatorId="creator-1" />);
