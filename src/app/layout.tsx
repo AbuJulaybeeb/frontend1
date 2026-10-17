@@ -33,7 +33,7 @@ const noFlashScript = `
 (function () {
   try {
     var stored = localStorage.getItem('${THEME_STORAGE_KEY}');
-    var theme = stored || 'system';
+    var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
     if (theme === 'system') {
       theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }

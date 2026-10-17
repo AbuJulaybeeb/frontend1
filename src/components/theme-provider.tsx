@@ -32,6 +32,10 @@ function resolveTheme(theme: Theme, enableSystem: boolean): ResolvedTheme {
   return theme;
 }
 
+function isTheme(value: string | null): value is Theme {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
 function applyTheme(resolvedTheme: ResolvedTheme, attribute: 'class' | 'data-theme'): void {
   if (typeof window === 'undefined') return;
 
@@ -68,8 +72,8 @@ export function ThemeProvider({
   );
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey) as Theme | null;
-    const initialTheme = stored || defaultTheme;
+    const stored = localStorage.getItem(storageKey);
+    const initialTheme = isTheme(stored) ? stored : defaultTheme;
     const initialResolved = resolveTheme(initialTheme, enableSystem);
 
     setThemeState(initialTheme);
