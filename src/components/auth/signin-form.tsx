@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthForm } from '@/components/auth/auth-form';
 import { ErrorMessage } from '@/components/shared/error-message';
+import { InlineFormError } from '@/components/shared/inline-form-error';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
+import { getFieldErrorProps } from '@/lib/form-errors';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -25,7 +27,15 @@ export default function SignInForm(): JSX.Element {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<SignInFormData>({ resolver: zodResolver(signInSchema) });
+  } = useForm<SignInFormData>({
+    resolver: zodResolver(signInSchema),
+    // Move focus to the first invalid control after a failed submit so keyboard
+    // and screen reader users land on the field that needs fixing.
+    shouldFocusError: true,
+  });
+
+  const emailError = getFieldErrorProps('email', errors.email?.message);
+  const passwordError = getFieldErrorProps('password', errors.password?.message);
 
   const onSubmit = async (data: SignInFormData): Promise<void> => {
     setError(null);
@@ -49,20 +59,42 @@ export default function SignInForm(): JSX.Element {
         </>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* noValidate: the Zod messages rendered below are the single source of
+          truth for validity. Without it the browser's own bubbles short-circuit
+          submit and the inline errors never appear. */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="you@example.com" {...register('email')} disabled={isSubmitting} />
-          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+          <Input
+            id="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            {...register('email')}
+            disabled={isSubmitting}
+            {...emailError.aria}
+          />
+          <InlineFormError id={emailError.errorId} message={emailError.message} />
         </div>
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label htmlFor="password">Password</Label>
-            <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">Forgot?</Link>
+            <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
+              Forgot?
+            </Link>
           </div>
-          <Input id="password" type="password" placeholder="••••••••" {...register('password')} disabled={isSubmitting} />
-          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            {...register('password')}
+            disabled={isSubmitting}
+            {...passwordError.aria}
+          />
+          <InlineFormError id={passwordError.errorId} message={passwordError.message} />
         </div>
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? <LoadingSpinner size="sm" /> : 'Sign In'}

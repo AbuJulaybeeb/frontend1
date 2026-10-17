@@ -110,6 +110,48 @@ Open [`examples/responsive-layout.html`](examples/responsive-layout.html) direct
 
 This file is a layout learning fixture. Application markup should use the Tailwind utilities above and the shared [UI components](COMPONENT_GUIDE.md), so app themes and component behavior remain consistent. If the breakpoint policy changes, update the table, snippets, and HTML example together.
 
+### Wide data tables: the `responsive-table` utility
+
+A table with five or more columns cannot fit a 320px viewport, and dropping a column loses data the reader needs. The [`responsive-table` class](../src/app/globals.css) reflows such a table instead of hiding anything: below `md` each row becomes a stacked card and every cell prints its own column name, taken from a `data-label` attribute. From `md` upwards the element falls back to normal table layout and the generated names are suppressed.
+
+```tsx
+<div className="w-full overflow-x-auto rounded-lg border">
+  <table className="responsive-table w-full text-sm">
+    <caption className="sr-only">Transaction history, newest first.</caption>
+    <thead className="border-b bg-muted/50">
+      <tr>
+        <th scope="col" className="px-4 py-3 text-left font-semibold">
+          Date
+        </th>
+        <th scope="col" className="px-4 py-3 text-left font-semibold">
+          Amount
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr className="border-b">
+        <td data-label="Date" className="px-4 py-3">
+          {date}
+        </td>
+        <td data-label="Amount" className="px-4 py-3 font-semibold">
+          {amount}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
+
+Points to keep:
+
+- Keep the markup a real table at every width. Only `display` values change, so nothing is duplicated in the DOM for small screens and no extra JavaScript runs.
+- Every data cell needs a `data-label` that matches its header. A cell without one (an empty-state row, for example) spans the full width instead of reserving a label column.
+- `data-label` renders through a generated `content`, so it never appears in `textContent`. Keep the visible value as the cell's only text and use `truncate` or wrapping for long values.
+- Keep `overflow-x-auto` on the wrapper as a safety net: if a table ever does exceed its container, the scroll stays local to the table instead of reaching the page.
+- Give the table a `<caption>`. The header row is not in the accessibility tree while the rows are stacked.
+
+Existing users are the [top tippers table](../src/components/sections/top-tippers-table.tsx), the creator [transaction history](../src/app/%28app%29/creators/%5Busername%5D/dashboard/page.tsx), and the [transaction filters](../src/components/sections/transaction-filter-bar.tsx). Browser coverage lives in [`mobile-responsive.spec.ts`](../e2e/mobile-responsive.spec.ts).
+
 ## Touch, keyboard, and mobile accessibility
 
 - Aim for **44 by 44 CSS pixel** interactive targets, with space between adjacent actions. Use `min-h-[44px] min-w-[44px]` for compact controls. This is a usability target; [WCAG 2.2's minimum target-size criterion](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) is 24 by 24 CSS pixels with specified exceptions, and needs a separate conformance review.
