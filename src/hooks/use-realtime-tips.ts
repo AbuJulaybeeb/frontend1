@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeTimeout } from '@/hooks/use-timeout';
+import { getErrorMessage } from '@/utils/hook-helpers';
 
 /**
  * Upper bound on the number of tips retained in state. Without a cap, a long
@@ -110,7 +111,7 @@ export function useRealtimeTips({
           }, 3000);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch tips');
+        setError(getErrorMessage(err, 'Failed to fetch tips'));
       }
 
       pollingTimeoutRef.current = setTimeout(pollTips, pollingInterval);
@@ -188,7 +189,7 @@ export function useRealtimeTips({
 
       webSocketRef.current = ws as WebSocket;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect websocket');
+      setError(getErrorMessage(err, 'Failed to connect websocket'));
     }
   }, [creatorId, enableWebSocket, onTipReceived, queryClient, prependTips, schedule]);
 

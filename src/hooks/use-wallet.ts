@@ -6,6 +6,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useWallet as sdkUseWallet } from 'dorisio-sdk/react';
 import { useWalletPreferenceStore } from '@/stores/wallet-preference-store';
+import { getErrorMessage } from '@/utils/hook-helpers';
 
 export interface WalletInfo {
   id: string;
@@ -181,7 +182,7 @@ export function useWallet() {
       clearOptimistic(walletId);
       setActionError({
         walletId,
-        message: err instanceof Error ? err.message : 'Failed to disconnect wallet',
+        message: getErrorMessage(err, 'Failed to disconnect wallet'),
       });
       throw err;
     } finally {
@@ -205,7 +206,7 @@ export function useWallet() {
       clearOptimistic(walletId);
       setActionError({
         walletId,
-        message: err instanceof Error ? err.message : 'Failed to rename wallet',
+        message: getErrorMessage(err, 'Failed to rename wallet'),
       });
       throw err;
     } finally {
