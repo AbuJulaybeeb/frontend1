@@ -166,7 +166,7 @@ describe('WalletManager Component', () => {
 
     it('shows error message with label when wallet loading fails', () => {
       vi.mocked(useWallet).mockReturnValue(
-        buildHookReturn({ wallets: [], loading: false, error: 'Failed to fetch wallets' })
+        buildHookReturn({ wallets: [], loading: false, error: { message: 'Failed to fetch wallets' } })
       );
 
       render(<WalletManager />);

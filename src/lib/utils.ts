@@ -104,14 +104,25 @@ export function isValidStellarPublicKey(key: string): boolean {
 }
 
 /**
- * Copy text to clipboard
+ * Copy text to clipboard with a fallback for browsers that don't
+ * support the async Clipboard API (non-secure contexts, older engines).
  */
 export async function copyToClipboard(text: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
-  } catch (err) {
-    console.error('Failed to copy to clipboard:', err);
-    throw err;
+  } catch {
+    // Fallback: temporary textarea + execCommand('copy')
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+    } finally {
+      document.body.removeChild(textarea);
+    }
   }
 }
 
