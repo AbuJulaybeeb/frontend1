@@ -946,4 +946,361 @@ describe('useWallet Hook', () => {
       expect(result.current.isPending('2')).toBe(false);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Connection success + verification flows
+  // ---------------------------------------------------------------------------
+  describe('wallet connection success flow', () => {
+    it('completes full connect-with-verification flow: nonce -> challenge -> verify', async () => {
+      mockGenerateNonce.mockResolvedValueOnce({ nonce: 'nonce-abc' });
+      mockGetChallenge.mockResolvedValueOnce({ challenge: 'sign-this' });
+      mockVerifyWallet.mockResolvedValueOnce({ verified: true, walletId: '1' });
+
+      const { result } = renderHook(() => useWallet());
+
+      const nonce = await result.current.generateNonce();
+      expect(nonce).toEqual({ nonce: 'nonce-abc' });
+
+      const challenge = await result.current.getChallenge('test-key-1');
+      expect(challenge).toEqual({ challenge: 'sign-this' });
+
+      const verifyResult = await result.current.verifyWallet({
+        publicKey: 'test-key-1',
+        signature: 'sig-123',
+        nonce: 'nonce-abc',
+      });
+      expect(verifyResult).toEqual({ verified: true, walletId: '1' });
+
+      expect(mockGenerateNonce).toHaveBeenCalledTimes(1);
+      expect(mockGetChallenge).toHaveBeenCalledWith('test-key-1');
+      expect(mockVerifyWallet).toHaveBeenCalledWith({
+        publicKey: 'test-key-1',
+        signature: 'sig-123',
+        nonce: 'nonce-abc',
+      });
+    });
+
+    it('verifyWallet success maps verified flag on selected wallet', async () => {
+      mockVerifyWallet.mockResolvedValueOnce({ verified: true, walletId: '1' });
+
+      const { result } = renderHook(() => useWallet());
+
+      const res = await result.current.verifyWallet({
+        publicKey: 'test-key-1',
+        signature: 'sig-123',
+        nonce: 'nonce-abc',
+      });
+
+      expect(res.verified).toBe(true);
+      expect(res.walletId).toBe('1');
+      expect(mockVerifyWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('fetchWallets then selectWallet completes selection flow', async () => {
+      mockListWallets.mockResolvedValueOnce(undefined);
+      const sdkWallet = {
+        id: '1',
+        userId: 'user-1',
+        publicKey: 'test-key-1',
+        name: 'My Wallet',
+        verified: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      const { result } = renderHook(() => useWallet());
+
+      await result.current.fetchWallets();
+      expect(mockListWallets).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        result.current.selectWallet({
+          id: '1',
+          publicKey: 'test-key-1',
+          name: 'My Wallet',
+          verified: true,
+        });
+      });
+
+      expect(mockSelectWallet).toHaveBeenCalledWith(sdkWallet);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Connection errors and error messages
+  // ---------------------------------------------------------------------------
+  describe('wallet connection errors', () => {
+    it('verifyWallet INVALID_SIGNATURE propagates SDK error', async () => {
+      mockVerifyWallet.mockRejectedValueOnce(
+        makeSdkError('Signature verification failed', 'INVALID_SIGNATURE')
+      );
+
+      const { result } = renderHook(() => useWallet());
+
+      await expect(
+        result.current.verifyWallet({
+          publicKey: 'test-key-1',
+          signature: 'bad-sig',
+          nonce: 'nonce-abc',
+        })
+      ).rejects.toThrow('Signature verification failed');
+      expect(mockVerifyWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('verifyWallet network error propagates SDK error', async () => {
+      mockVerifyWallet.mockRejectedValueOnce(makeSdkError('connection lost', 'NETWORK_ERROR'));
+
+      const { result } = renderHook(() => useWallet());
+
+      await expect(
+        result.current.verifyWallet({
+          publicKey: 'test-key-1',
+          signature: 'sig-123',
+          nonce: 'nonce-abc',
+        })
+      ).rejects.toThrow('connection lost');
+    });
+
+    it('getChallenge failure propagates error', async () => {
+      mockGetChallenge.mockRejectedValueOnce(new Error('Challenge service down'));
+
+      const { result } = renderHook(() => useWallet());
+
+      await expect(result.current.getChallenge('test-key-1')).rejects.toThrow(
+        'Challenge service down'
+      );
+    });
+
+    it('mapWalletError converts verifyWallet errors to friendly messages', () => {
+      const err = makeSdkError('bad signature', 'INVALID_SIGNATURE');
+      expect(mapWalletError(err)).toBe(
+        'Wallet verification failed: the signature is invalid. Please try again.'
+      );
+
+      const networkErr = makeSdkError('conn lost', 'NETWORK_ERROR');
+      expect(mapWalletError(networkErr)).toBe(
+        'Network error. Please check your connection and try again.'
+      );
+
+      const expired = makeSdkError('challenge expired', 'CHALLENGE_EXPIRED');
+      expect(mapWalletError(expired)).toBe(
+        'Verification challenge expired. Please start the verification process again.'
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Race conditions and state transitions
+  // ---------------------------------------------------------------------------
+  describe('race conditions and state transitions', () => {
+    it('consecutive disconnects clear previous error before starting new one', async () => {
+      const unlinkWallet = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('First failure'))
+        .mockResolvedValueOnce(undefined);
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ unlinkWallet }));
+
+      const { result } = renderHook(() => useWallet());
+
+      await act(async () => {
+        await expect(result.current.disconnectWallet('1')).rejects.toThrow('First failure');
+      });
+      expect(result.current.actionError?.message).toBe('First failure');
+
+      await act(async () => {
+        await result.current.disconnectWallet('1');
+      });
+      expect(result.current.actionError).toBeNull();
+      expect(result.current.isPending('1')).toBe(false);
+      expect(unlinkWallet).toHaveBeenCalledTimes(2);
+    });
+
+    it('disconnect sets pending true then false on success (state transition)', async () => {
+      let resolveUnlink!: () => void;
+      const unlinkWallet = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveUnlink = resolve;
+          })
+      );
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ unlinkWallet }));
+
+      const { result } = renderHook(() => useWallet());
+      expect(result.current.isPending('1')).toBe(false);
+
+      let disconnectPromise!: Promise<void>;
+      act(() => {
+        disconnectPromise = result.current.disconnectWallet('1');
+      });
+
+      expect(result.current.isPending('1')).toBe(true);
+      expect(result.current.actionError).toBeNull();
+
+      resolveUnlink();
+      await act(async () => {
+        await disconnectPromise;
+      });
+
+      expect(result.current.isPending('1')).toBe(false);
+      expect(result.current.actionError).toBeNull();
+    });
+
+    it('disconnect failure rolls back pending to false and keeps wallet visible', async () => {
+      const unlinkWallet = vi.fn().mockRejectedValue(new Error('Server error'));
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ unlinkWallet }));
+
+      const { result } = renderHook(() => useWallet());
+      expect(result.current.wallets).toHaveLength(1);
+      expect(result.current.isPending('1')).toBe(false);
+
+      await act(async () => {
+        await expect(result.current.disconnectWallet('1')).rejects.toThrow('Server error');
+      });
+
+      expect(result.current.wallets).toHaveLength(1);
+      expect(result.current.isPending('1')).toBe(false);
+      expect(result.current.actionError?.message).toBe('Server error');
+    });
+
+    it('optimistic disconnect removes wallet immediately, then restores on failure', async () => {
+      let resolveUnlink!: () => void;
+      let rejectUnlink!: (err: Error) => void;
+      const unlinkWallet = vi.fn(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            resolveUnlink = resolve;
+            rejectUnlink = reject;
+          })
+      );
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ unlinkWallet }));
+
+      const { result } = renderHook(() => useWallet());
+      expect(result.current.wallets).toHaveLength(1);
+
+      let disconnectPromise!: Promise<void>;
+      act(() => {
+        disconnectPromise = result.current.disconnectWallet('1');
+      });
+
+      // Optimistically removed before SDK resolves
+      expect(result.current.wallets).toHaveLength(0);
+      expect(result.current.isPending('1')).toBe(true);
+
+      // Force failure now
+      rejectUnlink(new Error('Boom'));
+
+      await act(async () => {
+        await expect(disconnectPromise).rejects.toThrow('Boom');
+      });
+
+      // Rolled back: wallet visible again, pending cleared, error set
+      expect(result.current.wallets).toHaveLength(1);
+      expect(result.current.isPending('1')).toBe(false);
+      expect(result.current.actionError?.message).toBe('Boom');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Multi-wallet operations (select, add/remove conceptual)
+  // ---------------------------------------------------------------------------
+  describe('multi-wallet management', () => {
+    it('selects each wallet by id and only calls sdkSelectWallet for known wallets', () => {
+      const w1 = {
+        id: 'w-1',
+        userId: 'u-1',
+        publicKey: 'key-1',
+        name: 'First',
+        verified: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      };
+      const w2 = {
+        id: 'w-2',
+        userId: 'u-1',
+        publicKey: 'key-2',
+        name: 'Second',
+        verified: false,
+        createdAt: '2026-01-02T00:00:00.000Z',
+      };
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ wallets: [w1, w2] }));
+
+      const { result } = renderHook(() => useWallet());
+
+      act(() => {
+        result.current.selectWallet({ id: 'w-1', publicKey: 'key-1', verified: true });
+      });
+      expect(mockSelectWallet).toHaveBeenCalledWith(w1);
+
+      act(() => {
+        result.current.selectWallet({ id: 'w-2', publicKey: 'key-2', verified: false });
+      });
+      expect(mockSelectWallet).toHaveBeenCalledWith(w2);
+
+      // Unknown wallet id is ignored
+      act(() => {
+        result.current.selectWallet({ id: 'unknown', publicKey: 'key-x', verified: false });
+      });
+      expect(mockSelectWallet).toHaveBeenCalledTimes(2);
+    });
+
+    it('maps multiple wallets and preferredWallet reflects store default', () => {
+      const w1 = {
+        id: 'w-1',
+        userId: 'u-1',
+        publicKey: 'key-1',
+        name: 'First',
+        verified: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      };
+      const w2 = {
+        id: 'w-2',
+        userId: 'u-1',
+        publicKey: 'key-2',
+        name: null,
+        verified: undefined,
+        createdAt: '2026-01-02T00:00:00.000Z',
+      };
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ wallets: [w1, w2] }));
+      useWalletPreferenceStore.setState({ defaultWalletId: 'w-2' });
+
+      const { result } = renderHook(() => useWallet());
+
+      expect(result.current.wallets).toHaveLength(2);
+      expect(result.current.wallets[0].verified).toBe(true);
+      expect(result.current.wallets[1].name).toBeUndefined();
+      expect(result.current.wallets[1].verified).toBe(false);
+      expect(result.current.preferredWallet?.id).toBe('w-2');
+    });
+
+    it('disconnects one wallet while leaving others intact', async () => {
+      const w1 = {
+        id: 'w-1',
+        userId: 'u-1',
+        publicKey: 'key-1',
+        name: 'First',
+        verified: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      };
+      const w2 = {
+        id: 'w-2',
+        userId: 'u-1',
+        publicKey: 'key-2',
+        name: 'Second',
+        verified: false,
+        createdAt: '2026-01-02T00:00:00.000Z',
+      };
+      const unlinkWallet = vi.fn().mockResolvedValueOnce(undefined);
+      vi.mocked(sdkUseWallet).mockReturnValue(buildSDKResult({ wallets: [w1, w2], unlinkWallet }));
+
+      const { result } = renderHook(() => useWallet());
+      expect(result.current.wallets).toHaveLength(2);
+
+      await act(async () => {
+        await result.current.disconnectWallet('w-1');
+      });
+
+      expect(unlinkWallet).toHaveBeenCalledWith('w-1');
+      expect(result.current.isPending('w-1')).toBe(false);
+      expect(result.current.isPending('w-2')).toBe(false);
+      expect(result.current.actionError).toBeNull();
+    });
+  });
 });
