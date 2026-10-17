@@ -7,17 +7,27 @@ import { useTipTierStore } from '@/stores/tip-tier-store';
 import { useScheduledTipsStore } from '@/stores/scheduled-tips-store';
 
 const createTipMock = vi.fn();
+const buildTransactionMock = vi.fn();
+const submitTransactionMock = vi.fn();
+const confirmTransactionMock = vi.fn();
+const selectWalletMock = vi.fn();
 let loadingState = false;
 
 vi.mock('@/hooks/use-create-tip', () => ({
   useCreateTip: (): {
     createTip: typeof createTipMock;
+    buildTransaction: typeof buildTransactionMock;
+    submitTransaction: typeof submitTransactionMock;
+    confirmTransaction: typeof confirmTransactionMock;
     loading: boolean;
     error: null;
     tip: null;
     reset: () => void;
   } => ({
     createTip: createTipMock,
+    buildTransaction: buildTransactionMock,
+    submitTransaction: submitTransactionMock,
+    confirmTransaction: confirmTransactionMock,
     loading: loadingState,
     error: null,
     tip: null,
@@ -35,10 +45,12 @@ vi.mock('@/hooks/use-wallet', () => ({
     wallets: typeof mockWallets;
     getPreferredWalletId: () => string;
     setLastUsedWallet: () => void;
+    selectWallet: typeof selectWalletMock;
   } => ({
     wallets: mockWallets,
     getPreferredWalletId: (): string => 'wallet-1',
     setLastUsedWallet: vi.fn(),
+    selectWallet: selectWalletMock,
   }),
 }));
 
@@ -89,7 +101,6 @@ vi.mock('@/components/notification-provider', () => ({
   }),
 }));
 
-
 describe('DorisioButton (Send Tip flow)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -104,6 +115,9 @@ describe('DorisioButton (Send Tip flow)', () => {
     });
     loadingState = false;
     createTipMock.mockReset();
+    buildTransactionMock.mockReset().mockResolvedValue({ fee: 100 });
+    submitTransactionMock.mockReset().mockResolvedValue({ status: 'pending' });
+    confirmTransactionMock.mockReset().mockResolvedValue({ status: 'confirmed' });
     createTipMock.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -112,9 +126,7 @@ describe('DorisioButton (Send Tip flow)', () => {
     );
   });
 
-  async function openModalAndSelectAmount(
-    user: ReturnType<typeof userEvent.setup>
-  ): Promise<void> {
+  async function openModalAndSelectAmount(user: ReturnType<typeof userEvent.setup>): Promise<void> {
     await user.click(screen.getByRole('button', { name: /send a tip/i }));
     const walletSelect = screen.getByTestId('wallet-select');
     await user.selectOptions(walletSelect, 'wallet-1');
@@ -154,6 +166,43 @@ describe('DorisioButton (Send Tip flow)', () => {
     await waitFor(() => {
       expect(createTipMock).toHaveBeenCalledWith({ creatorId: 'creator-1', amount: 5 });
     });
+    expect(await screen.findByText('Review Tip')).toBeInTheDocument();
+    expect(buildTransactionMock).toHaveBeenCalledOnce();
+    expect(selectWalletMock).toHaveBeenCalledWith(mockWallets[0]);
+    expect(submitTransactionMock).not.toHaveBeenCalled();
+    expect(screen.getByText('0.0000100 XLM')).toBeInTheDocument();
+    expect(screen.getByText('$5.00 USDC + 0.0000100 XLM')).toBeInTheDocument();
+  });
+
+  it('cancels from the review without submitting the transaction', async () => {
+    const user = userEvent.setup();
+    render(<DorisioButton creatorId="creator-1" />);
+
+    await openModalAndSelectAmount(user);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByText('Review Tip');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(submitTransactionMock).not.toHaveBeenCalled();
+    expect(screen.queryByText('Review Tip')).not.toBeInTheDocument();
+  });
+
+  it('does not allow review or submission when the SDK fee estimate is missing', async () => {
+    buildTransactionMock.mockResolvedValue({});
+    const user = userEvent.setup();
+    render(<DorisioButton creatorId="creator-1" />);
+
+    await openModalAndSelectAmount(user);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(errorMock).toHaveBeenCalledWith(
+        'The transaction fee estimate is unavailable. Please try again.',
+        'Tip failed'
+      );
+    });
+    expect(screen.queryByText('Review Tip')).not.toBeInTheDocument();
+    expect(submitTransactionMock).not.toHaveBeenCalled();
   });
 
   it('only triggers one network call on a rapid double-click of Continue', async () => {
@@ -170,6 +219,9 @@ describe('DorisioButton (Send Tip flow)', () => {
     await waitFor(() => {
       expect(createTipMock).toHaveBeenCalledTimes(1);
     });
+    await screen.findByText('Review Tip');
+    expect(buildTransactionMock).toHaveBeenCalledOnce();
+    expect(submitTransactionMock).not.toHaveBeenCalled();
   });
 
   it('shows a success notification and closes the modal after a successful tip', async () => {
@@ -178,10 +230,14 @@ describe('DorisioButton (Send Tip flow)', () => {
 
     await openModalAndSelectAmount(user);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByText('Review Tip');
+    await user.click(screen.getByRole('button', { name: 'Confirm & Send' }));
 
     await waitFor(() => {
       expect(successMock).toHaveBeenCalledWith(expect.stringContaining('$5'), 'Thank you');
     });
+    expect(submitTransactionMock).toHaveBeenCalledOnce();
+    expect(confirmTransactionMock).toHaveBeenCalledOnce();
     await waitFor(() => {
       expect(screen.queryByText('Send a Tip')).not.toBeInTheDocument();
     });
@@ -288,6 +344,7 @@ describe('DorisioButton (Send Tip flow)', () => {
       await waitFor(() => {
         expect(createTipMock).toHaveBeenCalledWith({ creatorId: 'creator-1', amount: 17.5 });
       });
+      await screen.findByText('Review Tip');
     });
 
     it('shows validation error for invalid custom amount and disables Continue', async () => {
@@ -300,9 +357,7 @@ describe('DorisioButton (Send Tip flow)', () => {
       const customInput = screen.getByLabelText('Custom tip amount');
       await user.type(customInput, '-5');
 
-      expect(
-        screen.getByText('Please enter an amount greater than $0')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Please enter an amount greater than $0')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
 
@@ -328,6 +383,7 @@ describe('DorisioButton (Send Tip flow)', () => {
       expect(continueButton).not.toBeDisabled();
 
       await user.click(continueButton);
+      await screen.findByText('Review Tip');
 
       await waitFor(() => {
         expect(createTipMock).toHaveBeenCalledWith({ creatorId: 'creator-1', amount: 14 });
@@ -414,4 +470,3 @@ describe('DorisioButton (Send Tip flow)', () => {
     });
   });
 });
-
