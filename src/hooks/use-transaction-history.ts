@@ -63,6 +63,16 @@ export function useTransactionHistory(
     transactionHash: t.transactionHash,
   }));
 
+  const fetchTransactions = async (...args: Parameters<typeof fetchHistory>) => {
+    try {
+      return await fetchHistory(...args);
+    } catch (err) {
+      // Rethrow so callers can react to the error; the SDK owns the
+      // loading flag and clears it in its own finally block.
+      throw err;
+    }
+  };
+
   return {
     transactions,
     total,
@@ -70,7 +80,7 @@ export function useTransactionHistory(
     pageSize,
     loading,
     error,
-    fetchTransactions: fetchHistory,
+    fetchTransactions,
     goToPage,
     nextPage,
     prevPage,
