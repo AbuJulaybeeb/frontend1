@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Creator } from '@/types';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCreateTip } from '@/hooks/use-create-tip';
@@ -31,6 +31,8 @@ export function SupporterCommissionRequest({
   const [description, setDescription] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInProgress = useRef(false);
 
   const refresh = useCallback(() => {
     setSettings(getCommissionSettings(creator.id));
@@ -64,7 +66,9 @@ export function SupporterCommissionRequest({
 
   function submit(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (!user || !user.username || !user.name || !settings) return;
+    if (submissionInProgress.current || !user || !user.username || !user.name || !settings) return;
+    submissionInProgress.current = true;
+    setIsSubmitting(true);
     setError(null);
     setMessage(null);
     try {
@@ -87,6 +91,9 @@ export function SupporterCommissionRequest({
       refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not send commission request.');
+    } finally {
+      submissionInProgress.current = false;
+      setIsSubmitting(false);
     }
   }
 
@@ -157,9 +164,10 @@ export function SupporterCommissionRequest({
           )}
           <button
             type="submit"
+            disabled={isSubmitting}
             className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            Send request
+            {isSubmitting ? 'Sending...' : 'Send request'}
           </button>
         </form>
       )}

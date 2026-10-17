@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Plus, Trash2, Sparkles, Lock, FileText, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,7 @@ export interface ExclusiveContentCreatorPanelProps {
 export function ExclusiveContentCreatorPanel({
   creatorId,
 }: ExclusiveContentCreatorPanelProps): JSX.Element {
-  const contentList = useExclusiveContentStore((state) =>
-    state.getContentForCreator(creatorId)
-  );
+  const contentList = useExclusiveContentStore((state) => state.getContentForCreator(creatorId));
   const addContent = useExclusiveContentStore((state) => state.addContent);
   const deleteContent = useExclusiveContentStore((state) => state.deleteContent);
   const { schedule } = useSafeTimeout();
@@ -36,6 +34,8 @@ export function ExclusiveContentCreatorPanel({
   const [tier, setTier] = useState<SupporterTierLevel>('bronze');
   const [amount, setAmount] = useState<number>(DEFAULT_TIER_THRESHOLDS.bronze);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInProgress = useRef(false);
 
   const handleTierChange = (selectedTier: SupporterTierLevel) => {
     setTier(selectedTier);
@@ -44,28 +44,38 @@ export function ExclusiveContentCreatorPanel({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (submissionInProgress.current || !title.trim() || !content.trim()) return;
 
-    addContent(creatorId, {
-      title: title.trim(),
-      description: description.trim() || undefined,
-      content: content.trim(),
-      previewSnippet: previewSnippet.trim() || undefined,
-      requiredTier: tier,
-      requiredAmount: Number(amount) || DEFAULT_TIER_THRESHOLDS[tier],
-    });
+    submissionInProgress.current = true;
+    setIsSubmitting(true);
+    try {
+      addContent(creatorId, {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        content: content.trim(),
+        previewSnippet: previewSnippet.trim() || undefined,
+        requiredTier: tier,
+        requiredAmount: Number(amount) || DEFAULT_TIER_THRESHOLDS[tier],
+      });
 
-    setTitle('');
-    setDescription('');
-    setContent('');
-    setPreviewSnippet('');
-    setIsOpenForm(false);
-    setSuccessMessage('Tier-exclusive content published successfully!');
-    schedule(() => setSuccessMessage(null), 4000);
+      setTitle('');
+      setDescription('');
+      setContent('');
+      setPreviewSnippet('');
+      setIsOpenForm(false);
+      setSuccessMessage('Tier-exclusive content published successfully!');
+      schedule(() => setSuccessMessage(null), 4000);
+    } finally {
+      submissionInProgress.current = false;
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Card className="border border-border/80 shadow-sm" data-testid="exclusive-content-creator-panel">
+    <Card
+      className="border border-border/80 shadow-sm"
+      data-testid="exclusive-content-creator-panel"
+    >
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -73,7 +83,8 @@ export function ExclusiveContentCreatorPanel({
             Tier-Locked & Exclusive Content
           </CardTitle>
           <CardDescription>
-            Reward your highest-tier supporters with exclusive posts, downloads, and insider updates.
+            Reward your highest-tier supporters with exclusive posts, downloads, and insider
+            updates.
           </CardDescription>
         </div>
 
@@ -173,15 +184,15 @@ export function ExclusiveContentCreatorPanel({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsOpenForm(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsOpenForm(false)}>
                 Cancel
               </Button>
-              <Button type="submit" data-testid="publish-exclusive-content-button">
-                Publish to Tier
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="publish-exclusive-content-button"
+              >
+                {isSubmitting ? 'Publishing...' : 'Publish to Tier'}
               </Button>
             </div>
           </form>
@@ -211,9 +222,7 @@ export function ExclusiveContentCreatorPanel({
                 >
                   <div className="space-y-1 pr-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-foreground">
-                        {item.title}
-                      </span>
+                      <span className="font-medium text-sm text-foreground">{item.title}</span>
                       <Badge variant="outline" className="capitalize text-xs">
                         <Sparkles className="mr-1 h-3 w-3" />
                         {item.requiredTier} (${item.requiredAmount})
