@@ -59,5 +59,8 @@ export function useSupporterAnalytics(period: SupporterAnalyticsPeriod): UseQuer
     queryKey: ['supporterAnalytics', userId, period],
     queryFn: () => fetchSupporterAnalytics(client as unknown as AnalyticsClient, period),
     enabled: Boolean(userId),
+    // Ensure loading state is cleared on error so the UI is not stuck.
+    retry: false,
+    retryOnMount: false,
   });
 }

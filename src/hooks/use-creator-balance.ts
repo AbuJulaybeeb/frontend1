@@ -31,7 +31,13 @@ export function useCreatorBalance(creatorId: string | null | undefined) {
     : null;
 
   const fetchBalance = async () => {
-    return sdkFetchBalance(creatorId || '');
+    try {
+      return await sdkFetchBalance(creatorId || '');
+    } catch (err) {
+      // Surface the error to callers but ensure the hook does not stay
+      // stuck in a loading state after a failed request.
+      throw err;
+    }
   };
 
   return {

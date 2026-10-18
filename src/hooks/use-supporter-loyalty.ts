@@ -22,14 +22,24 @@ export function useSupporterBadgeVisibility(
   const [isPublic, setIsPublic] = useState(false);
 
   useEffect(() => {
-    setIsPublic(getSupporterBadgeVisibility(supporterId));
+    try {
+      setIsPublic(getSupporterBadgeVisibility(supporterId));
+    } catch {
+      // Ensure the visibility state is not left in a stale state on error.
+      setIsPublic(false);
+    }
   }, [supporterId]);
 
   const setPublic = useCallback(
     (visible: boolean): void => {
       if (!supporterId) return;
-      setSupporterBadgeVisibility(supporterId, visible);
-      setIsPublic(visible);
+      try {
+        setSupporterBadgeVisibility(supporterId, visible);
+        setIsPublic(visible);
+      } catch {
+        // Revert to the previous value so the UI reflects the failed update.
+        setIsPublic(getSupporterBadgeVisibility(supporterId));
+      }
     },
     [supporterId]
   );

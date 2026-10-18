@@ -1,7 +1,7 @@
-/**
+/*
  * useCreateTip Hook
  * Wrapper around SDK's useCreateTip hook with frontend-specific types
- */
+*/
 
 import { useCreateTip as sdkUseCreateTip } from 'dorisio-sdk/react';
 import type { Transaction } from 'dorisio-sdk';
@@ -65,18 +65,26 @@ export function useCreateTip() {
   } = sdkUseCreateTip();
 
   const createTip = async (payload: CreateTipPayload): Promise<TipResponse> => {
-    const result = await sdkCreateTip({
-      creatorId: payload.creatorId,
-      amount: payload.amount,
-      message: payload.message,
-    });
+    try {
+      const result = await sdkCreateTip({
+        creatorId: payload.creatorId,
+        amount: payload.amount,
+        message: payload.message,
+      });
 
-    return {
-      id: result?.id,
-      status: toTipStatus(result?.status, step),
-      transactionHash: toTransactionHash(result),
-      amount: result?.amount,
-    };
+      return {
+        id: result?.id,
+        status: toTipStatus(result?.status, step),
+        transactionHash: toTransactionHash(result),
+        amount: result?.amount,
+      };
+    } catch (err) {
+      // Ensure the hook does not remain stuck in a loading state after an API error.
+      // Resetting clears transient state (including loading) so the user can retry.
+      // Error message display is left unchanged.
+      reset();
+      throw err;
+    }
   };
 
   return {
