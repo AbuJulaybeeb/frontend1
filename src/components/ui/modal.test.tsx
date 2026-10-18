@@ -160,6 +160,63 @@ describe('Modal Component', () => {
 
       // Escape key handling is built into Radix Dialog
       await user.keyboard('{Escape}');
+
+      expect(screen.queryByText('Press Escape to close')).not.toBeInTheDocument();
+    });
+
+    it('closes modal on backdrop (outside) click', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <Modal defaultOpen={true}>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Test Modal</ModalTitle>
+            </ModalHeader>
+            <p>Click backdrop to close</p>
+          </ModalContent>
+        </Modal>
+      );
+
+      expect(screen.getByText('Click backdrop to close')).toBeInTheDocument();
+
+      const overlay = document.body.querySelector('.fixed.inset-0.z-50') as HTMLElement;
+      expect(overlay).toBeInTheDocument();
+
+      await user.click(overlay);
+
+      expect(screen.queryByText('Click backdrop to close')).not.toBeInTheDocument();
+    });
+
+    it('returns focus to trigger button after modal closes', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <Modal>
+          <ModalTrigger>Open Modal</ModalTrigger>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Test Modal</ModalTitle>
+            </ModalHeader>
+            <p>Modal content</p>
+          </ModalContent>
+        </Modal>
+      );
+
+      const trigger = screen.getByRole('button', { name: /open modal/i });
+      await user.click(trigger);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Modal')).toBeInTheDocument();
+      });
+
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => {
+        expect(screen.queryByText('Test Modal')).not.toBeInTheDocument();
+      });
+
+      expect(document.activeElement).toBe(trigger);
     });
   });
 

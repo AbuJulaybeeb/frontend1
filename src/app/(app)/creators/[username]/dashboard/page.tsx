@@ -53,6 +53,7 @@ import { PushNotificationPermissionPrompt } from '@/components/shared/push-notif
 import Link from 'next/link';
 import { SubscriptionManagement } from '@/components/sections/subscription-management';
 import { TipTierSettings } from '@/components/sections/tip-tier-settings';
+import { CreatorTierBenefits } from '@/components/sections/creator-tier-benefits';
 import { ScheduledTipsDashboard } from '@/components/sections/scheduled-tips-dashboard';
 import { CreatorCollaborations } from '@/components/sections/creator-collaborations';
 import { CreatorCommissionRequests } from '@/components/sections/creator-commission-requests';
@@ -202,6 +203,8 @@ function CreatorDashboardPageContent(): JSX.Element {
 
       <PushNotificationPermissionPrompt />
 
+      <CreatorTierBenefits totalEarnings={balance?.totalEarnings ?? 0} />
+
       <SubscriptionManagement creatorId={username} />
       <TipTierSettings creatorId={username} />
       <ScheduledTipsDashboard creatorId={username} />
@@ -320,7 +323,7 @@ function CreatorDashboardPageContent(): JSX.Element {
         {transactionsLoading && transactions.length === 0 ? (
           <TransactionTableSkeleton />
         ) : (
-          <div className="border rounded-lg overflow-x-auto animate-fade-in">
+          <div className="border rounded-lg max-h-96 overflow-x-auto overflow-y-auto animate-fade-in">
             <table className="responsive-table w-full text-sm">
               <caption className="sr-only">
                 Transaction history with the amount, date, sender, message, status, and
@@ -328,22 +331,22 @@ function CreatorDashboardPageContent(): JSX.Element {
               </caption>
               <thead className="border-b bg-muted/50">
                 <tr>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
-                    Date ({getUserTimezoneShort()})
+                  <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
+                    Date
                   </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
                     Amount
                   </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
                     From
                   </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
                     Message
                   </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
                     Tx ID
                   </th>
                   <th scope="col" className="px-4 py-3 text-right font-semibold">

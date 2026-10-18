@@ -26,6 +26,7 @@ import {
   type PushPermission,
 } from '@/lib/push-notifications';
 import { usePushNotificationPreferenceStore } from '@/stores/push-notification-preference-store';
+import { getErrorMessage } from '@/utils/hook-helpers';
 
 export interface UsePushNotificationsResult {
   /** Whether this browser supports the Service Worker + Push APIs at all. */
@@ -163,7 +164,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         }
       }
     } catch (err) {
-      console.error('Failed to unsubscribe from push notifications:', err);
+      console.error('Failed to unsubscribe from push notifications:', getErrorMessage(err, 'Failed to unsubscribe from push notifications'));
     } finally {
       setIsSubscribed(false);
       setOptedIn(false);

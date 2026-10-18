@@ -51,5 +51,9 @@ export function useCreatorAnalytics(
     queryKey: ['creatorAnalytics', username, normalizedRange.preset, normalizedRange.startDate, normalizedRange.endDate],
     queryFn: () => fetchCreatorAnalytics(username as string, normalizedRange),
     enabled: Boolean(username),
+    // React Query clears `isLoading`/`isFetching` on error automatically, but
+    // explicitly disable retries-on-mount so a failed request surfaces the
+    // error state immediately and the consumer can retry via `refetch`.
+    retry: false,
   });
 }

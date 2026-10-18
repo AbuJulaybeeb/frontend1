@@ -27,6 +27,7 @@ export function useCreatorSupporters(
   useEffect(() => {
     if (!username) {
       setEntries([]);
+      setLoading(false);
       return;
     }
 
@@ -46,7 +47,9 @@ export function useCreatorSupporters(
         );
       })
       .catch(() => {
-        if (active) setEntries([]);
+        if (!active) return;
+        setEntries([]);
+        setLoading(false);
       })
       .finally(() => {
         if (active) setLoading(false);

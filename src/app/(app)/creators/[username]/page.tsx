@@ -21,7 +21,10 @@ import {
   TransactionTableSkeleton,
 } from '@/components/shared/creator-skeletons';
 import { CreatorVerificationBadge } from '@/components/shared/creator-verification-badge';
+import { CreatorTierBadge } from '@/components/shared/creator-tier-badge';
 import { CreatorBio } from '@/components/sections/creator-bio';
+import { resolveCreatorTier } from '@/lib/creator-tiers';
+import { FollowButton } from '@/components/sections/follow-button';
 import { SubscriptionTiers } from '@/components/sections/subscription-tiers';
 import { SubscriberOnlyContent } from '@/components/sections/subscriber-only-content';
 import { ExclusiveContentFeed } from '@/components/sections/exclusive-content-feed';
@@ -67,6 +70,7 @@ export default function CreatorProfilePage(): JSX.Element {
         .filter((tx) => tx.senderId === user.id && tx.status === 'confirmed')
         .reduce((sum, tx) => sum + tx.amount, 0)
     : 0;
+  const creatorTier = resolveCreatorTier(state.creator?.totalEarnings ?? 0);
   const collaborations = state.creator ? getPublicCollaborations(state.creator.id) : [];
 
   // Fetch creator profile
@@ -161,9 +165,17 @@ export default function CreatorProfilePage(): JSX.Element {
                   verificationReason={state.creator.verificationReason}
                   showDetails
                 />
+                <CreatorTierBadge tier={creatorTier} size="md" />
               </div>
 
-              <p className="text-muted-foreground mb-4">@{state.creator.username}</p>
+              <p className="text-muted-foreground mb-4">
+                @{state.creator.username}
+              </p>
+
+              <p className="text-sm text-muted-foreground mb-6">
+                Creator tier:{' '}
+                {creatorTier.charAt(0).toUpperCase() + creatorTier.slice(1)}
+              </p>
 
               {state.creator.bio && (
                 <CreatorBio value={state.creator.bio} className="mb-6 max-w-2xl text-lg" />
@@ -184,8 +196,14 @@ export default function CreatorProfilePage(): JSX.Element {
                 </div>
               </div>
 
+              <FollowButton creatorId={state.creator.id} followerId={user?.id} className="mb-4" />
+
               {/* Tip Button */}
-              <DorisioButton creatorId={state.creator.id} tipTiers={state.creator.tipTiers} />
+              <DorisioButton
+                creatorId={state.creator.id}
+                creatorName={state.creator.displayName}
+                tipTiers={state.creator.tipTiers}
+              />
               <SubscriptionTiers creatorId={state.creator.id} subscriberId={user?.id} />
             </div>
           </div>
@@ -325,15 +343,15 @@ export default function CreatorProfilePage(): JSX.Element {
         {history.transactions.length > 0 && (
           <section>
             <h2 className="text-xl font-bold mb-6">Recent Tips</h2>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg max-h-96 overflow-auto">
               <table className="w-full">
                 <thead className="bg-muted border-b">
                   <tr>
-                    <th className="text-left px-6 py-3 font-semibold">From</th>
-                    <th className="text-left px-6 py-3 font-semibold">Amount</th>
-                    <th className="text-left px-6 py-3 font-semibold">Message</th>
-                    <th className="text-left px-6 py-3 font-semibold">Date</th>
-                    <th className="text-left px-6 py-3 font-semibold">Status</th>
+                    <th className="text-left px-6 py-3 font-semibold sticky top-0 z-10 bg-muted">From</th>
+                    <th className="text-left px-6 py-3 font-semibold sticky top-0 z-10 bg-muted">Amount</th>
+                    <th className="text-left px-6 py-3 font-semibold sticky top-0 z-10 bg-muted">Message</th>
+                    <th className="text-left px-6 py-3 font-semibold sticky top-0 z-10 bg-muted">Date</th>
+                    <th className="text-left px-6 py-3 font-semibold sticky top-0 z-10 bg-muted">Status</th>
                   </tr>
                 </thead>
                 <tbody>

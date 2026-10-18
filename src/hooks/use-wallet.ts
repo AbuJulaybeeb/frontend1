@@ -6,6 +6,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useWallet as sdkUseWallet } from 'dorisio-sdk/react';
 import { useWalletPreferenceStore } from '@/stores/wallet-preference-store';
+import { getErrorMessage } from '@/utils/hook-helpers';
 
 export interface WalletInfo {
   id: string;
@@ -100,6 +101,7 @@ export function useWallet() {
   const [actionError, setActionError] = useState<{ walletId: string; message: string } | null>(
     null
   );
+  const [actionLoading, setActionLoading] = useState(false);
 
   const clearOptimistic = useCallback((walletId: string) => {
     setOptimistic((prev) => {
@@ -120,6 +122,21 @@ export function useWallet() {
       }
       return next;
     });
+  }, []);
+
+  /**
+   * Wraps an async SDK call so that the loading flag is always cleared,
+   * whether the call succeeds or throws. Without this, a rejected promise
+   * would leave `actionLoading` stuck at `true` and the UI would remain
+   * in a loading state, blocking retries.
+   */
+  const runWithLoading = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
+    setActionLoading(true);
+    try {
+      return await fn();
+    } finally {
+      setActionLoading(false);
+    }
   }, []);
 
   // Map SDK wallets to frontend format, applying any optimistic overlay and
@@ -172,7 +189,7 @@ export function useWallet() {
     setOptimistic((prev) => ({ ...prev, [walletId]: { ...prev[walletId], disconnected: true } }));
     setPending(walletId, true);
     try {
-      await unlinkWallet(walletId);
+      await runWithLoading(() => unlinkWallet(walletId));
       // Success: leave the optimistic "disconnected" entry in place until
       // the SDK's own wallet list catches up on its next fetch; clearing it
       // early would briefly resurrect the wallet if listWallets() hasn't
@@ -181,7 +198,7 @@ export function useWallet() {
       clearOptimistic(walletId);
       setActionError({
         walletId,
-        message: err instanceof Error ? err.message : 'Failed to disconnect wallet',
+        message: getErrorMessage(err, 'Failed to disconnect wallet'),
       });
       throw err;
     } finally {
@@ -199,13 +216,13 @@ export function useWallet() {
     setOptimistic((prev) => ({ ...prev, [walletId]: { ...prev[walletId], name } }));
     setPending(walletId, true);
     try {
-      await sdkRenameWallet(walletId, name);
+      await runWithLoading(() => sdkRenameWallet(walletId, name));
       clearOptimistic(walletId);
     } catch (err) {
       clearOptimistic(walletId);
       setActionError({
         walletId,
-        message: err instanceof Error ? err.message : 'Failed to rename wallet',
+        message: getErrorMessage(err, 'Failed to rename wallet'),
       });
       throw err;
     } finally {
@@ -230,6 +247,7 @@ export function useWallet() {
     preferredWallet,
     loading,
     error,
+    actionLoading,
     fetchWallets: listWallets,
     generateNonce,
     getChallenge,

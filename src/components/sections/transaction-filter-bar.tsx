@@ -26,6 +26,8 @@ export interface TransactionFilterBarProps {
   onExportExcel?: () => void;
   onExportPdf?: () => void;
   resultCount: number;
+  /** When true, renders a skeleton placeholder instead of the filter controls. */
+  loading?: boolean;
 }
 
 export function TransactionFilterBar({
@@ -36,7 +38,44 @@ export function TransactionFilterBar({
   onExportExcel,
   onExportPdf,
   resultCount,
+  loading = false,
 }: TransactionFilterBarProps): JSX.Element {
+  if (loading) {
+    return (
+      <div
+        className="border rounded-lg p-4 space-y-3 animate-pulse"
+        data-testid="transaction-filter-bar-skeleton"
+        aria-busy="true"
+        aria-label="Loading transaction filters"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="min-w-0">
+              <div className="h-3 w-16 rounded bg-muted" />
+              <div className="mt-1 h-8 w-full rounded bg-muted" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+          <div className="col-span-2 w-full min-w-0 sm:col-span-1 sm:w-auto sm:flex-1 sm:min-w-52">
+            <div className="h-3 w-24 rounded bg-muted" />
+            <div className="mt-1 h-8 w-full rounded bg-muted" />
+          </div>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="min-w-0">
+              <div className="h-3 w-12 rounded bg-muted" />
+              <div className="mt-1 h-8 w-full rounded bg-muted" />
+            </div>
+          ))}
+          <div className="col-span-2 ml-auto flex flex-wrap items-center gap-2 sm:col-span-1">
+            <div className="h-11 w-24 rounded bg-muted" />
+            <div className="h-11 w-16 rounded bg-muted" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const exportDisabled = resultCount === 0;
 
   return (

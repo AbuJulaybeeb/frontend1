@@ -54,6 +54,33 @@ const ACTIVITY_TYPE_COLORS: Record<ActivityType, string> = {
   content: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
 };
 
+function ActivityItemSkeleton(): JSX.Element {
+  return (
+    <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/30 border border-muted animate-pulse">
+      {/* Icon */}
+      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted" />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-24 rounded bg-muted" />
+              <div className="h-4 w-16 rounded bg-muted" />
+            </div>
+            <div className="h-4 w-3/4 rounded bg-muted" />
+            <div className="h-3 w-full rounded bg-muted" />
+            <div className="h-3 w-2/3 rounded bg-muted" />
+          </div>
+          <div className="flex-shrink-0">
+            <div className="h-3 w-20 rounded bg-muted" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ActivityFeed({
   items,
   loading = false,
@@ -126,7 +153,13 @@ export function ActivityFeed({
       </div>
 
       {/* Activity List */}
-      {filteredItems.length === 0 && !loading ? (
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <ActivityItemSkeleton key={index} />
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">No recent activity</p>
       ) : (
         <div className="space-y-3">
@@ -137,7 +170,7 @@ export function ActivityFeed({
       )}
 
       {/* Load More Button */}
-      {hasMore && (
+      {hasMore && !loading && (
         <div className="flex justify-center pt-4">
           <Button
             variant="outline"

@@ -14,28 +14,29 @@ import { formatCurrency, formatDate } from '@/utils/formatters';
 
 export interface TopTippersTableProps {
   data: TopTipper[];
+  loading?: boolean;
 }
 
-export function TopTippersTable({ data }: TopTippersTableProps): JSX.Element {
-  if (data.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        No tippers for this period
-      </div>
-    );
-  }
+function SkeletonBar({ className }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded bg-muted ${className ?? ''}`}
+      aria-hidden="true"
+    />
+  );
+}
 
-  const sorted = [...data].sort((a, b) => b.totalAmount - a.totalAmount);
-
+function TopTippersSkeleton() {
+  const rows = Array.from({ length: 5 });
   return (
     <div
       className="w-full overflow-x-auto rounded-lg border"
-      data-testid="top-tippers-table"
+      data-testid="top-tippers-skeleton"
+      aria-busy="true"
+      aria-live="polite"
     >
       <table className="responsive-table w-full text-sm">
-        <caption className="sr-only">
-          Top tippers for this period, ranked by total amount tipped, highest first.
-        </caption>
+        <caption className="sr-only">Loading top tippers&#x2010;&#x2010;</caption>
         <thead className="border-b bg-muted/50">
           <tr>
             <th scope="col" className="px-4 py-3 text-left font-semibold">
@@ -54,6 +55,81 @@ export function TopTippersTable({ data }: TopTippersTableProps): JSX.Element {
               Last Tip
             </th>
             <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Latest Message
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((_, index) => (
+            <tr key={index} className="border-b transition">
+              <td data-label="Rank" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-8" />
+              </td>
+              <td data-label="Tipper" className="px-4 py-3">
+                <SkeletonBar className="h-4 u-w-32" />
+              </td>
+              <td data-label="Total Tipped" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-20" />
+              </td>
+              <td data-label="Tips" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-10" />
+              </td>
+              <td data-label="Last Tip" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-24" />
+              </td>
+              <td data-label="Latest Message" className="px-4 py-3">
+                <SkeletonBar className="h-4 u-w-48" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function TopTipperTable({ data, loading }: TopTippersTableProps): JSX.Element {
+  if (loading) {
+    return <TopTippersSkeleton />;
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+        No tippers for this period
+      </div>
+    );
+  }
+
+  const sorted = [...data].sort((a, b) => b.totalAmount - a.totalAmount);
+
+  return (
+    <div
+      className="w-full max-h-96 overflow-x-auto overflow-y-auto rounded-lg border"
+      data-testid="top-tippers-table"
+    >
+      <table className="responsive-table w-full text-sm">
+        <caption className="sr-only">
+          Top tippers for this period, ranked by total amount tipped, highest first.
+        </caption>
+        <thead className="border-b bg-muted/50">
+          <tr>
+            <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
+              Rank
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
+              Tipper
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
+              Total Tipped
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
+              Tips
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
+              Last Tip
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold sticky top-0 z-10 bg-muted">
               Latest Message
             </th>
           </tr>

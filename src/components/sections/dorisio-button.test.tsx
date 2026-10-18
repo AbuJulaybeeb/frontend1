@@ -174,6 +174,37 @@ describe('DorisioButton (Send Tip flow)', () => {
     expect(screen.getByText('$5.00 USDC + 0.0000100 XLM')).toBeInTheDocument();
   });
 
+  it('asks to confirm the amount and recipient with a fee breakdown before sending', async () => {
+    const user = userEvent.setup();
+    render(<DorisioButton creatorId="creator-1" creatorName="Alice Cooper" />);
+
+    await openModalAndSelectAmount(user);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByText('Review Tip');
+
+    expect(screen.getByTestId('tip-confirmation-question')).toHaveTextContent(
+      'Send $5.00 tip to Alice Cooper?'
+    );
+    expect(screen.getByText('Recipient')).toBeInTheDocument();
+    expect(screen.getByText('Tip amount')).toBeInTheDocument();
+    expect(screen.getByText('Estimated network fee')).toBeInTheDocument();
+    expect(screen.getByText('Total')).toBeInTheDocument();
+    expect(submitTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it('submits only after Confirm & Send is pressed', async () => {
+    const user = userEvent.setup();
+    render(<DorisioButton creatorId="creator-1" creatorName="Alice Cooper" />);
+
+    await openModalAndSelectAmount(user);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByText('Review Tip');
+    expect(submitTransactionMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Confirm & Send' }));
+    await waitFor(() => expect(submitTransactionMock).toHaveBeenCalledOnce());
+  });
+
   it('cancels from the review without submitting the transaction', async () => {
     const user = userEvent.setup();
     render(<DorisioButton creatorId="creator-1" />);
@@ -264,6 +295,23 @@ describe('DorisioButton (Send Tip flow)', () => {
 
     expect(screen.getByTestId('wallet-selector')).toBeInTheDocument();
     expect(screen.getByTestId('wallet-select')).toBeInTheDocument();
+  });
+
+  it('closes tip modal when Escape key is pressed', async () => {
+    const user = userEvent.setup();
+    render(<DorisioButton creatorId="creator-1" />);
+
+    await user.click(screen.getByRole('button', { name: /send a tip/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
   it('auto-selects preferred wallet when modal opens', async () => {
