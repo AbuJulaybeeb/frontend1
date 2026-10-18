@@ -86,6 +86,6 @@ export async function generateMetadata(
   };
 }
 
-export default function CreatorLayout({ children }: CreatorLayoutProps) {
+export default function CreatorLayout({ children }: CreatorLayoutProps): JSX.Element {
   return <>{children}</>;
 }

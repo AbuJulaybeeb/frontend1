@@ -138,7 +138,7 @@ export function TransactionFilterBar({
       </div>
 
       {/* Two columns on a phone so the selects pair up instead of each claiming
-          a full-width row; a single wrapping row from `sm` upwards. `min-w-0` 
+          a full-width row; a single wrapping row from `sm` upwards. `min-w-0`
           keeps the grid and flex children able to shrink below their content
           width, which is what prevents a long value from widening the bar. */}
       <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
@@ -254,7 +254,7 @@ export function TransactionFilterBar({
               type="button"
               onClick={onExportPdf}
               disabled={exportDisabled}
-              className="min-h-[44px] px-3 py-1.5 text-sm border rounded hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed sm:min-h-0 "
+              className="min-h-[44px] px-3 py-1.5 text-sm border rounded hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed sm:min-h-0"
             >
               PDF
             </button>

@@ -3,11 +3,11 @@
  * Component for empty state displays
  */
 
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export interface EmptyStateProps {
-  icon?: LucideIcon;
+  icon?: typeof LucideIcon;
   title: string;
   description?: string;
   action?: {

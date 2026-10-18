@@ -23,10 +23,19 @@ import {
   TransactionTableSkeleton,
 } from '@/components/shared/creator-skeletons';
 import { CreatorVerificationBadge } from '@/components/shared/creator-verification-badge';
+import { PushNotificationPermissionPrompt } from '@/components/shared/push-notification-permission-prompt';
 import Link from 'next/link';
+import { SubscriptionManagement } from '@/components/sections/subscription-management';
+import { TipTierSettings } from '@/components/sections/tip-tier-settings';
+import { CreatorTierBenefits } from '@/components/sections/creator-tier-benefits';
+import { ScheduledTipsDashboard } from '@/components/sections/scheduled-tips-dashboard';
+import { CreatorCollaborations } from '@/components/sections/creator-collaborations';
+import { CreatorCommissionRequests } from '@/components/sections/creator-commission-requests';
+import { ExclusiveContentCreatorPanel } from '@/components/sections/exclusive-content-creator-panel';
+import { CreatorAnnouncementPanel } from '@/components/sections/creator-announcement-panel';
 import { fetchCreatorAnalytics } from '@/hooks/use-creator-analytics';
 
-export default function CreatorDashboardPage() {
+export default function CreatorDashboardPage(): JSX.Element {
   return (
     <Suspense fallback={null}>
       <CreatorDashboardPageContent />
@@ -34,7 +43,7 @@ export default function CreatorDashboardPage() {
   );
 }
 
-function CreatorDashboardPageContent() {
+function CreatorDashboardPageContent(): JSX.Element {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
@@ -123,7 +132,17 @@ function CreatorDashboardPageContent() {
         </span>
       </div>
 
+      <PushNotificationPermissionPrompt />
+
+      <CreatorTierBenefits totalEarnings={balance?.totalEarnings ?? 0} />
+
       <SubscriptionManagement creatorId={username} />
+      <TipTierSettings creatorId={username} />
+      <ScheduledTipsDashboard creatorId={username} />
+      <CreatorCollaborations username={username} userId={user.id} userName={user.name} />
+      <CreatorCommissionRequests username={username} userId={user.id} userName={user.name} />
+      <ExclusiveContentCreatorPanel creatorId={username} />
+      <CreatorAnnouncementPanel creatorId={username} />
 
       <section
         aria-labelledby="creator-verification-heading"
@@ -156,7 +175,7 @@ function CreatorDashboardPageContent() {
           className="p-4 border border-red-200 bg-red-50 rounded-lg text-sm text-red-700"
           role="alert"
         >
-          Unable to load earnings: {balanceError}
+          Unable to load earnings: {balanceError?.message || 'Unknown error'}
         </div>
       )}
       {balanceLoading ? (
@@ -217,28 +236,50 @@ function CreatorDashboardPageContent() {
           resultCount={filteredTransactions.length}
         />
 
-        {/* Table */}
+        {/*
+          Table. Mobile-first: `responsive-table` (src/app/globals.css) reflows
+          each row into a stacked card below the `md` breakpoint and prints the
+          column name from every cell's `data-label`. No column is removed, so
+          the amount and the date stay on screen on a phone and the page never
+          scrolls sideways.
+        */}
         {transactionsError && !transactionsLoading && (
           <div
             className="p-4 border border-red-200 bg-red-50 rounded-lg text-sm text-red-700"
             role="alert"
           >
-            Unable to load transaction history: {transactionsError}
+            Unable to load transaction history: {transactionsError?.message || 'Unknown error'}
           </div>
         )}
         {transactionsLoading && transactions.length === 0 ? (
           <TransactionTableSkeleton />
         ) : (
           <div className="border rounded-lg overflow-x-auto animate-fade-in">
-            <table className="w-full text-sm">
+            <table className="responsive-table w-full text-sm">
+              <caption className="sr-only">
+                Transaction history with the amount, date, sender, message, status, and
+                transaction id for each entry.
+              </caption>
               <thead className="border-b bg-muted/50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Date</th>
-                  <th className="px-4 py-3 text-left font-semibold">Amount</th>
-                  <th className="px-4 py-3 text-left font-semibold">From</th>
-                  <th className="px-4 py-3 text-left font-semibold">Message</th>
-                  <th className="px-4 py-3 text-left font-semibold">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold">Tx ID</th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Date
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Amount
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    From
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Message
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Tx ID
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -253,12 +294,19 @@ function CreatorDashboardPageContent() {
                 ) : (
                   filteredTransactions.map((tx) => (
                     <tr key={tx.id} className="border-b hover:bg-muted/30 transition">
-                      <td className="px-4 py-3">{formatDate(tx.createdAt)}</td>
-                      <td className="px-4 py-3 font-semibold">{formatCurrency(tx.amount)}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground truncate">
+                      <td data-label="Date" className="px-4 py-3">
+                        {formatDate(tx.createdAt)}
+                      </td>
+                      <td data-label="Amount" className="px-4 py-3 font-semibold">
+                        {formatCurrency(tx.amount)}
+                      </td>
+                      <td
+                        data-label="From"
+                        className="px-4 py-3 text-sm text-muted-foreground truncate"
+                      >
                         {tx.senderUsername || `${(tx.senderId || '').slice(0, 8)}...`}
                       </td>
-                      <td className="px-4 py-3 min-w-56">
+                      <td data-label="Message" className="px-4 py-3 min-w-56">
                         {tx.message ? (
                           <p className="max-w-xs truncate text-sm" title={tx.message}>
                             {tx.message}
@@ -267,7 +315,7 @@ function CreatorDashboardPageContent() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Status" className="px-4 py-3">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
                             tx.status
@@ -276,7 +324,10 @@ function CreatorDashboardPageContent() {
                           {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground truncate">
+                      <td
+                        data-label="Tx ID"
+                        className="px-4 py-3 text-xs text-muted-foreground truncate"
+                      >
                         {tx.transactionHash ? (
                           <div className="space-y-1">
                             <a

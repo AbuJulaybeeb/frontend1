@@ -19,7 +19,6 @@ import {
   Filter,
   ChevronDown,
   Loader2,
-  Loader2 as Spinner,
 } from 'lucide-react';
 
 export interface ActivityFeedProps {

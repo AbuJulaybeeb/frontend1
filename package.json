@@ -1,6 +1,6 @@
 {
-  "name": "dorisio-frontend",
-  "version": "0.1.0",
+  "name": "dorisio-app",
+  "version": "1.0.0",
   "description": "Dorisio frontend - Next.js web application",
   "private": true,
   "scripts": {
@@ -14,7 +14,15 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest --run",
     "test:e2e": "playwright test",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:mutation": "stryker run",
+    "bench": "vitest bench --run",
+    "bench:ui": "vitest bench --ui",
+    "bench:ci": "vitest bench --run --reporter=default --reporter=json --outputFile=benchmarks/results.json",
+    "bench:compare": "node scripts/benchmark-compare.mjs",
+    "bench:check": "node scripts/check-perf-thresholds.js",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -34,7 +42,10 @@
     "lucide-react": "^0.263.1",
     "marked": "^18.0.14",
     "next": "^14.0.0",
+    "next-pwa": "^5.6.0",
+    "posthog-js": "^1.435.6",
     "react": "^18.3.1",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.48.0",
     "recharts": "^3.10.1",
@@ -43,10 +54,21 @@
     "zustand": "^4.4.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@eslint/js": "^10.0.1",
     "@next/bundle-analyzer": "^14.2.35",
     "@next/eslint-plugin-next": "^16.3.4",
+    "@percy/cli": "^1.29.6",
+    "@percy/playwright": "^1.0.6",
     "@playwright/test": "^1.41.2",
+    "@storybook/addon-a11y": "^8.6.14",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/nextjs": "^8.6.14",
+    "@storybook/react": "^8.6.14",
+    "@storybook/test": "^8.6.14",
+    "@stryker-mutator/core": "^8.5.0",
+    "@stryker-mutator/typescript-checker": "^8.5.0",
+    "@stryker-mutator/vitest-runner": "^8.5.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -68,7 +90,9 @@
     "happy-dom": "^20.14.5",
     "postcss": "^8.4.32",
     "prettier": "^3.3.3",
+    "storybook": "^8.6.14",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.19.0",
     "typescript": "^5.4.5",
     "vite": "^8.3.0",
     "vitest": "^5.0.0"

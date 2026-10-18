@@ -431,6 +431,74 @@
   }
 }
 
+/* Responsive data tables
+ *
+ * A six-column table cannot lay out on a 320px phone, and dropping a column
+ * loses data the reader needs. Below the `md` breakpoint every row of a
+ * `.responsive-table` reflows into a stacked card and each cell prints its own
+ * column name, taken from its `data-label` attribute. From `md` upwards the
+ * element falls back to normal table layout and the generated names are
+ * suppressed, so nothing changes for existing wide-screen layouts.
+ *
+ *   <div class="overflow-x-auto">
+ *     <table class="responsive-table w-full text-sm">
+ *       <thead>...</thead>
+ *       <tbody><tr><td data-label="Amount">$12.00</td></tr></tbody>
+ *     </table>
+ *   </div>
+ *
+ * Every data cell needs a `data-label` matching its header; a cell without one
+ * spans the full width instead of reserving a label column. The markup stays a
+ * real table at every width, so nothing is duplicated for small screens. See
+ * docs/MOBILE_FIRST_RESPONSIVE_GUIDE.md.
+ */
+@media (max-width: 767px) {
+  /* Column names are rendered per cell below, so the header row would only
+     repeat them. */
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody tr {
+    display: block;
+  }
+
+  .responsive-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(4.5rem, 30%) minmax(0, 1fr);
+    align-items: start;
+    gap: 0.125rem 0.75rem;
+    padding: 0.5rem 1rem;
+    /* Long values (tx hashes, handles, messages) have to be able to shrink
+       instead of widening the row past the viewport. */
+    overflow-wrap: anywhere;
+  }
+
+  .responsive-table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .responsive-table tbody td > * {
+    min-width: 0;
+  }
+
+  /* Cells without a column name (an empty-state row, for example) span the full
+     width instead of reserving a label column. */
+  .responsive-table tbody td:not([data-label]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .responsive-table tbody td:not([data-label])::before {
+    display: none;
+  }
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;

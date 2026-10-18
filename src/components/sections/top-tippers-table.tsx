@@ -2,7 +2,7 @@
  * Top Tippers Table
  * Lists a creator's top supporters sorted by total tip amount.
  *
- * Mobile-first: the `responsive-table` class (see `src/app/globals.css") turns
+ * Mobile-first: the `responsive-table` class (see `src/app/globals.css`) turns
  * each row into a stacked card below the `md` breakpoint and prints the column
  * name from every cell's `data-label`. No column is removed, so the total
  * tipped and the last tip date both stay visible on a 320px phone, and the
@@ -88,7 +88,7 @@ function TopTippersSkeleton() {
   );
 }
 
-export function TopTippersTable({ data, loading }: TopTippersTableProps): JSX.Element {
+export function TopTipperTable({ data, loading }: TopTippersTableProps): JSX.Element {
   if (loading) {
     return <TopTippersSkeleton />;
   }

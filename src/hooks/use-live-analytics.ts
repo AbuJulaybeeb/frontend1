@@ -5,9 +5,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+// import { useQueryClient } from '@tanstack/react-query'; // Not used
 import { useRealtimeNotifications } from './use-realtime-notifications';
-import type { TipNotification } from './use-realtime-notifications';
+// import type { TipNotification } from './use-realtime-notifications'; // Type is not used
 
 export interface LiveMetrics {
   tipRatePerMinute: number;
