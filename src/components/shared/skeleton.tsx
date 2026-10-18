@@ -26,6 +26,90 @@ export function SkeletonCard(): JSX.Element {
 }
 
 /**
+ * Skeleton List Item
+ * Placeholder matching a common list row (avatar + text lines + trailing value)
+ */
+export interface SkeletonListItemProps extends React.HTMLAttributes<HTMLDivElement> {
+  showAvatar?: boolean;
+  showTrailing?: boolean;
+}
+
+export function SkeletonListItem({
+  showAvatar = true,
+  showTrailing = true,
+  className,
+  ...props
+}: SkeletonListItemProps): JSX.Element {
+  return (
+    <div
+      className={cn('flex items-center gap-3 rounded-lg border border-border p-4', className)}
+      {...props}
+    >
+      {showAvatar && <Skeleton className="h-10 w-10 shrink-0 rounded-full" />}
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-3 w-2/3" />
+      </div>
+      {showTrailing && <Skeleton className="h-4 w-16 shrink-0" />}
+    </div>
+  );
+}
+
+/**
+ * Skeleton List
+ * Placeholder for a vertical list of rows
+ */
+export interface SkeletonListProps extends React.HTMLAttributes<HTMLDivElement> {
+  count?: number;
+  showAvatar?: boolean;
+  showTrailing?: boolean;
+}
+
+export function SkeletonList({
+  count = 5,
+  showAvatar = true,
+  showTrailing = true,
+  className,
+  ...props
+}: SkeletonListProps): JSX.Element {
+  return (
+    <div className={cn('space-y-3', className)} {...props}>
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonListItem key={i} showAvatar={showAvatar} showTrailing={showTrailing} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Skeleton Table
+ * Placeholder for a table with header row and body rows
+ */
+export interface SkeletonTableProps extends React.HTMLAttributes<HTMLDivElement> {
+  rows?: number;
+  cols?: number;
+}
+
+export function SkeletonTable({ rows = 5, cols = 4, className, ...props }: SkeletonTableProps): JSX.Element {
+  return (
+    <div className={cn('space-y-3', className)} {...props}>
+      <div className="flex items-center gap-4 border-b border-border pb-3">
+        {Array.from({ length: cols }).map((_, i) => (
+          <Skeleton key={i} className="h-4 flex-1" />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex items-center gap-4">
+          {Array.from({ length: cols }).map((_, c) => (
+            <Skeleton key={c} className="h-4 flex-1" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Skeleton Text
  */
 export interface SkeletonTextProps extends React.HTMLAttributes<HTMLDivElement> {

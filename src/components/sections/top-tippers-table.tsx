@@ -14,9 +14,85 @@ import { formatCurrency, formatDate } from '@/utils/formatters';
 
 export interface TopTippersTableProps {
   data: TopTipper[];
+  loading?: boolean;
 }
 
-export function TopTippersTable({ data }: TopTippersTableProps): JSX.Element {
+function SkeletonBar({ className }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded bg-muted ${className ?? ''}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+function TopTippersSkeleton() {
+  const rows = Array.from({ length: 5 });
+  return (
+    <div
+      className="w-full overflow-x-auto rounded-lg border"
+      data-testid="top-tippers-skeleton"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <table className="responsive-table w-full text-sm">
+        <caption className="sr-only">Loading top tippers&#x2010;&#x2010;</caption>
+        <thead className="border-b bg-muted/50">
+          <tr>
+            <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Rank
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Tipper
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Total Tipped
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Tips
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Last Tip
+            </th>
+            <th scope="col" className="px-4 py-3 text-left font-semibold">
+              Latest Message
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((_, index) => (
+            <tr key={index} className="border-b transition">
+              <td data-label="Rank" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-8" />
+              </td>
+              <td data-label="Tipper" className="px-4 py-3">
+                <SkeletonBar className="h-4 u-w-32" />
+              </td>
+              <td data-label="Total Tipped" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-20" />
+              </td>
+              <td data-label="Tips" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-10" />
+              </td>
+              <td data-label="Last Tip" className="px-4 py-3">
+                <SkeletonBar className="h-4 w-24" />
+              </td>
+              <td data-label="Latest Message" className="px-4 py-3">
+                <SkeletonBar className="h-4 u-w-48" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function TopTipperTable({ data, loading }: TopTippersTableProps): JSX.Element {
+  if (loading) {
+    return <TopTippersSkeleton />;
+  }
+
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
