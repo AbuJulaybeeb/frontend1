@@ -18,10 +18,9 @@ type SDKCreateTipResult = UseCreateTipState & UseCreateTipActions;
 function makeTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 'tip-123',
-    fromUserId: 'user-1',
     creatorId: 'creator-1',
     amount: 25,
-    message: null,
+    message: undefined,
     status: 'confirmed',
     stellarTxHash: 'tx-hash-123',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -47,7 +46,7 @@ function sdkReturn(overrides: Partial<SDKCreateTipResult> = {}): SDKCreateTipRes
 }
 
 describe('useCreateTip Hook', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockSdkCreateTip.mockResolvedValue(defaultResult);
     mockSdkUseCreateTip.mockReturnValue(sdkReturn());
@@ -76,7 +75,9 @@ describe('useCreateTip Hook', () => {
   it('provides error state', () => {
     const { result } = renderHook(() => useCreateTip());
 
-    expect(result.current.error === undefined || typeof result.current.error === 'string').toBe(true);
+    expect(result.current.error === undefined || typeof result.current.error === 'string').toBe(
+      true
+    );
   });
 
   it('provides reset function', () => {

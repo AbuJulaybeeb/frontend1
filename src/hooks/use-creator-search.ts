@@ -21,6 +21,7 @@ import type { Creator } from '@/types';
 export type CreatorSortOption = 'trending' | 'newest' | 'alphabetical' | 'earnings';
 
 export interface CreatorSearchFilters {
+  category: string;
   search: string;
   verifiedOnly: boolean;
   minEarnings: string;
@@ -30,6 +31,7 @@ export interface CreatorSearchFilters {
 }
 
 const DEFAULT_FILTERS: CreatorSearchFilters = {
+  category: '',
   search: '',
   verifiedOnly: false,
   minEarnings: '',
@@ -49,6 +51,7 @@ function filtersFromSearchParams(params: URLSearchParams): CreatorSearchFilters 
     maxEarnings: params.get('maxEarnings') || DEFAULT_FILTERS.maxEarnings,
     sort: (params.get('sort') as CreatorSortOption) || DEFAULT_FILTERS.sort,
     page: Number(params.get('page')) || DEFAULT_FILTERS.page,
+    category: params.get('category') || DEFAULT_FILTERS.category,
   };
 }
 
@@ -78,6 +81,7 @@ function applyClientFilters(creators: Creator[], filters: CreatorSearchFilters):
   if (filters.verifiedOnly) {
     result = result.filter((creator) => creator.verified);
   }
+  if (filters.category) result = result.filter((creator) => creator.category === filters.category);
 
   if (filters.search) {
     const query = filters.search.toLowerCase();
@@ -132,6 +136,7 @@ export function useCreatorSearch(): {
     const handle = setTimeout(() => {
       const params = new URLSearchParams();
       if (filters.search) params.set('search', filters.search);
+      if (filters.category) params.set('category', filters.category);
       if (filters.verifiedOnly) params.set('verified', 'true');
       if (filters.minEarnings) params.set('minEarnings', filters.minEarnings);
       if (filters.maxEarnings) params.set('maxEarnings', filters.maxEarnings);
@@ -156,10 +161,7 @@ export function useCreatorSearch(): {
       }),
   });
 
-  const rawCreators: Creator[] = useMemo(
-    () => (data?.creators || []) as Creator[],
-    [data]
-  );
+  const rawCreators: Creator[] = useMemo(() => (data?.creators || []) as Creator[], [data]);
 
   const creators = useMemo(
     () => applyClientFilters(rawCreators, { ...filters, search: debouncedSearch }),

@@ -8,15 +8,11 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { TipSourceBreakdownEntry } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
+import { CHART_COLORS, LEGEND_WRAPPER_STYLE, TOOLTIP_CONTENT_STYLE } from '@/utils/chart-config';
 
 export interface TipSourceBreakdownProps {
   data: TipSourceBreakdownEntry[];
 }
-
-// Fixed categorical order drawn from the app's existing design tokens
-// (tailwind.config.ts), so a source always maps to the same color rather
-// than shifting when the list is filtered or reordered.
-const SOURCE_COLORS = ['#ffbf1f', '#22c55e', '#3b82f6', '#ef4444', '#a855f7', '#14b8a6'];
 
 export function TipSourceBreakdown({ data }: TipSourceBreakdownProps): JSX.Element {
   const total = data.reduce((sum, entry) => sum + entry.amount, 0);
@@ -45,22 +41,20 @@ export function TipSourceBreakdown({ data }: TipSourceBreakdownProps): JSX.Eleme
             isAnimationActive={false}
           >
             {data.map((entry, index) => (
-              <Cell key={entry.source} fill={SOURCE_COLORS[index % SOURCE_COLORS.length]} />
+              <Cell key={entry.source} fill={CHART_COLORS[index % CHART_COLORS.length]} />
             ))}
           </Pie>
           <Tooltip
-            formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
-            contentStyle={{
-              backgroundColor: '#1a1a1a',
-              border: '1px solid #2a2a2a',
-              borderRadius: 8,
-              color: '#ffffff',
-            }}
+            formatter={(value: unknown, name: unknown) => [
+              formatCurrency(Number(value)),
+              String(name),
+            ]}
+            contentStyle={TOOLTIP_CONTENT_STYLE}
           />
           <Legend
             verticalAlign="bottom"
             height={36}
-            wrapperStyle={{ fontSize: 12, color: '#888888' }}
+            wrapperStyle={LEGEND_WRAPPER_STYLE}
           />
         </PieChart>
       </ResponsiveContainer>

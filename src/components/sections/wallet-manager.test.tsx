@@ -68,7 +68,7 @@ function buildHookReturn(overrides: Record<string, unknown> = {}) {
       verified: true,
     },
     loading: false,
-    error: undefined,
+    error: null,
     preferredWallet: null,
     setDefaultWalletId: vi.fn(),
     getPreferredWalletId: vi.fn(),
@@ -166,7 +166,7 @@ describe('WalletManager Component', () => {
 
     it('shows error message with label when wallet loading fails', () => {
       vi.mocked(useWallet).mockReturnValue(
-        buildHookReturn({ wallets: [], loading: false, error: 'Failed to fetch wallets' })
+        buildHookReturn({ wallets: [], loading: false, error: { message: 'Failed to fetch wallets' } })
       );
 
       render(<WalletManager />);
@@ -410,6 +410,155 @@ describe('WalletManager Component', () => {
       await waitFor(() => {
         expect(mockDisconnectWallet).toHaveBeenCalledWith('1');
       });
+    });
+
+    // -------------------------------------------------------------------------
+    // Disconnection success + state cleanup
+    // -------------------------------------------------------------------------
+    it('removes wallet from list after successful disconnect (state cleanup)', async () => {
+      const user = userEvent.setup();
+      mockDisconnectWallet.mockResolvedValue(undefined);
+
+      vi.mocked(useWallet).mockReturnValue(
+        buildHookReturn({
+          wallets: [
+            { id: '1', publicKey: 'GC123', name: 'Main Wallet', verified: true },
+            { id: '2', publicKey: 'GB456', name: 'Trading Wallet', verified: false },
+          ],
+          disconnectWallet: mockDisconnectWallet,
+        })
+      );
+
+      const { rerender } = render(<WalletManager />);
+
+      expect(screen.getByText('Main Wallet')).toBeInTheDocument();
+      expect(screen.getByText('Trading Wallet')).toBeInTheDocument();
+
+      const deleteButton = screen.getByLabelText(/Delete Main Wallet/i);
+      await user.click(deleteButton);
+
+      await waitFor(() => screen.getByText(/Disconnect Wallet/i));
+
+      const confirmButton = screen.getByRole('button', { name: /^Disconnect$/i });
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockDisconnectWallet).toHaveBeenCalledWith('1');
+      });
+
+      // Simulate SDK list updating after successful disconnect: wallet '1' removed.
+      vi.mocked(useWallet).mockReturnValue(
+        buildHookReturn({
+          wallets: [{ id: '2', publicKey: 'GB456', name: 'Trading Wallet', verified: false }],
+          disconnectWallet: mockDisconnectWallet,
+        })
+      );
+
+      rerender(<WalletManager />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Main Wallet')).not.toBeInTheDocument();
+      });
+      expect(screen.getByText('Trading Wallet')).toBeInTheDocument();
+    });
+
+    it('clears inline loading and error after successful disconnect', async () => {
+      const user = userEvent.setup();
+      mockDisconnectWallet.mockResolvedValue(undefined);
+
+      vi.mocked(useWallet).mockReturnValue(
+        buildHookReturn({
+          wallets: [{ id: '1', publicKey: 'GC123', name: 'Main Wallet', verified: true }],
+          disconnectWallet: mockDisconnectWallet,
+        })
+      );
+
+      render(<WalletManager />);
+
+      const deleteButton = screen.getByLabelText(/Delete Main Wallet/i);
+      await user.click(deleteButton);
+
+      await waitFor(() => screen.getByText(/Disconnect Wallet/i));
+
+      const confirmButton = screen.getByRole('button', { name: /^Disconnect$/i });
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockDisconnectWallet).toHaveBeenCalledWith('1');
+      });
+
+      // Disconnect button no longer shows "Disconnecting..." after success.
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /Disconnecting/i })).not.toBeInTheDocument();
+      });
+    });
+
+    it('disconnects one wallet while leaving the other intact (multi-wallet)', async () => {
+      const user = userEvent.setup();
+      mockDisconnectWallet.mockResolvedValue(undefined);
+
+      vi.mocked(useWallet).mockReturnValue(
+        buildHookReturn({
+          wallets: [
+            { id: '1', publicKey: 'GC123', name: 'Main Wallet', verified: true },
+            { id: '2', publicKey: 'GB456', name: 'Trading Wallet', verified: false },
+          ],
+          disconnectWallet: mockDisconnectWallet,
+        })
+      );
+
+      const { rerender } = render(<WalletManager />);
+
+      const deleteButton2 = screen.getByLabelText(/Delete Trading Wallet/i);
+      await user.click(deleteButton2);
+
+      await waitFor(() => screen.getByText(/Disconnect Wallet/i));
+
+      const confirmButton = screen.getByRole('button', { name: /^Disconnect$/i });
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockDisconnectWallet).toHaveBeenCalledWith('2');
+      });
+
+      // Main wallet still present; trading wallet removed after simulated SDK refresh.
+      expect(screen.getByText('Main Wallet')).toBeInTheDocument();
+
+      vi.mocked(useWallet).mockReturnValue(
+        buildHookReturn({
+          wallets: [{ id: '1', publicKey: 'GC123', name: 'Main Wallet', verified: true }],
+          disconnectWallet: mockDisconnectWallet,
+        })
+      );
+
+      rerender(<WalletManager />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Trading Wallet')).not.toBeInTheDocument();
+      });
+    });
+
+    it('selects multiple wallets in sequence', async () => {
+      const user = userEvent.setup();
+      vi.mocked(useWallet).mockReturnValue(
+        buildHookReturn({
+          wallets: [
+            { id: '1', publicKey: 'GC123', name: 'Wallet 1', verified: true },
+            { id: '2', publicKey: 'GB456', name: 'Wallet 2', verified: false },
+          ],
+          selectWallet: mockSelectWallet,
+        })
+      );
+
+      render(<WalletManager />);
+
+      const wallet1Card = screen.getByTestId('wallet-1');
+      const wallet2Card = screen.getByTestId('wallet-2');
+
+      await user.click(wallet1Card);
+      await user.click(wallet2Card);
+
+      expect(mockSelectWallet).toHaveBeenCalledTimes(2);
     });
   });
 

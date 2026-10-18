@@ -27,6 +27,8 @@ The frontend is the **dumb UI layer** that:
 - **SDK:** Dorisio-sdk (from workspace)
 - **Deployment:** Vercel
 
+For store organization, selectors, persistence, async actions, debugging, and migration guidance, see the [Zustand state management guide](docs/ZUSTAND_GUIDE.md).
+
 ## Features
 
 - ✅ User authentication (sign up / log in)
@@ -114,12 +116,12 @@ src/
 
 ## Key Pages
 
-| Route | Purpose | Auth Required |
-|-------|---------|---------------|
-| `/` | Landing page with features | No |
-| `/creators` | Creator discovery & search | No |
-| `/creators/[username]` | Creator public profile | No |
-| `/creators/[username]/dashboard` | Creator earnings & wallet | Yes |
+| Route                            | Purpose                    | Auth Required |
+| -------------------------------- | -------------------------- | ------------- |
+| `/`                              | Landing page with features | No            |
+| `/creators`                      | Creator discovery & search | No            |
+| `/creators/[username]`           | Creator public profile     | No            |
+| `/creators/[username]/dashboard` | Creator earnings & wallet  | Yes           |
 
 ## Environment Variables
 
@@ -201,6 +203,7 @@ vercel --prod
 ### Environment Setup for Production
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for:
+
 - Environment variable configuration
 - Vercel setup steps
 - Health checks and monitoring
@@ -273,6 +276,14 @@ const tip = await sdk.createTip(payload);
    - Check transaction history table
    - Verify wallet management section
 
+## Documentation
+
+- [Mobile-first and responsive layout guide](./docs/MOBILE_FIRST_RESPONSIVE_GUIDE.md) — Breakpoints, touch interactions, working grid examples, mobile performance, and device testing.
+- 📘 [SDK Usage Patterns & Best Practices Guide](./docs/SDK_USAGE_PATTERNS.md) — Comprehensive guide on SDK initialization, configuration tuning, authentication lifecycles, error handling, pagination, and performance optimization.
+- 📡 [API Integration Guide](./docs/API_INTEGRATION_GUIDE.md) — Backend API integration reference, frontend-owned route definitions, and browser exports.
+- 🚀 [Deployment Guide](./DEPLOYMENT.md) — Production setup, environment configuration, and Vercel hosting.
+- 🎨 [Storybook Guide](./docs/STORYBOOK.md) — Component development and visual testing in isolation.
+
 ## Notes
 
 - Frontend builds **depend on SDK** — build SDK first
@@ -289,4 +300,6 @@ For issues:
 2. Verify environment variables are set
 3. Check backend is running (NEXT_PUBLIC_API_URL)
 4. Review [DEPLOYMENT.md](./DEPLOYMENT.md) for production issues
-5. Contact: support@dorisio.dev
+5. Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common user issues
+6. Check [docs/DEVELOPER_TROUBLESHOOTING.md](./docs/DEVELOPER_TROUBLESHOOTING.md) for development issues
+7. Contact: support@dorisio.dev

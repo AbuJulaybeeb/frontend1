@@ -13,6 +13,12 @@ import { BackgroundRefreshIndicator } from '@/components/shared/background-refre
 import { RouteTracker } from '@/components/route-tracker';
 import { useAuthStore } from '@/stores/auth-store';
 import { setMonitoringUser } from '@/lib/monitoring';
+import { initPerformanceMonitoring } from '@/lib/performance';
+import { startMemoryMonitor } from '@/lib/memory-monitor';
+import { installRequestTracing } from '@/lib/request-tracing';
+import { I18nProvider } from '@/lib/i18n';
+import { registerServiceWorker } from '@/lib/push-notifications';
+import { FeatureFlagsProvider } from '@/lib/feature-flags';
 
 const CompatibleDorisioProvider = DorisioProvider as unknown as ComponentType<{
   client: DorisioClient;
@@ -26,9 +32,11 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
   // Initialize Dorisio client
   const dorisioClient = useMemo(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    return new DorisioClient({
+    const client = new DorisioClient({
       baseUrl: apiUrl,
     });
+    installRequestTracing(client as unknown as Parameters<typeof installRequestTracing>[0]);
+    return client;
   }, []);
 
   // The auth store's `persist` middleware rehydrates from localStorage
@@ -56,6 +64,26 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
     setMonitoringUser(user ? { id: user.id, email: user.email, username: user.username } : null);
   }, [user]);
 
+  useEffect(() => initPerformanceMonitoring(), []);
+
+  // Sample the JS heap for the lifetime of the app so sustained growth is
+  // reported to Sentry (and available via window.__dorisioMemory in dev).
+  // Set NEXT_PUBLIC_MEMORY_MONITOR=off to disable in a given environment.
+  useEffect(() => {
+    const monitor = startMemoryMonitor();
+    return () => monitor.stop();
+  }, []);
+
+  // Register the push notification service worker as soon as the app boots.
+  // Registration alone is silent (no permission prompt, no subscription) -
+  // it just makes the worker available so that a later subscribe() call
+  // (from the dashboard prompt or settings toggle) doesn't have to wait on
+  // registration first. Errors are logged and swallowed inside
+  // registerServiceWorker() itself so this never blocks app boot.
+  useEffect(() => {
+    void registerServiceWorker();
+  }, []);
+
   if (!hasHydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -65,15 +93,19 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <QueryClientProvider client={queryClient}>
-        <CompatibleDorisioProvider client={dorisioClient} config={dorisioClient.getConfig()}>
-          <NotificationProvider />
-          <BackgroundRefreshIndicator />
-          <RouteTracker />
-          {children}
-        </CompatibleDorisioProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <FeatureFlagsProvider distinctId={user?.id}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <QueryClientProvider client={queryClient}>
+            <CompatibleDorisioProvider client={dorisioClient} config={dorisioClient.getConfig()}>
+              <NotificationProvider />
+              <BackgroundRefreshIndicator />
+              <RouteTracker />
+              {children}
+            </CompatibleDorisioProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </FeatureFlagsProvider>
+    </I18nProvider>
   );
 }

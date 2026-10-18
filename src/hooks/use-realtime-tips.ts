@@ -5,6 +5,15 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeTimeout } from '@/hooks/use-timeout';
+import { getErrorMessage } from '@/utils/hook-helpers';
+
+/**
+ * Upper bound on the number of tips retained in state. Without a cap, a long
+ * session keeps every tip ever polled/received in memory, which is a slow but
+ * unbounded leak. Older entries are dropped first (newest are prepended).
+ */
+const MAX_TIPS = 200;
 
 export interface TipNotification {
   id: string;
@@ -36,12 +45,17 @@ export function useRealtimeTips({
   dismissTip: (tipId: string) => void;
 } {
   const queryClient = useQueryClient();
+  const { schedule, cancelAll } = useSafeTimeout();
   const [tips, setTips] = useState<TipNotification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollingTimeoutRef = useRef<NodeJS.Timeout>();
   const webSocketRef = useRef<WebSocket | null>(null);
   const unreadCountRef = useRef(0);
+
+  const prependTips = useCallback((incoming: TipNotification[]) => {
+    setTips((prev) => [...incoming, ...prev].slice(0, MAX_TIPS));
+  }, []);
 
   // Start polling for new tips
   const startPolling = useCallback(async () => {
@@ -78,7 +92,7 @@ export function useRealtimeTips({
             isNew: true,
           }));
 
-          setTips((prev) => [...newTips, ...prev]);
+          prependTips(newTips);
           unreadCountRef.current += newTips.length;
 
           // Callback and trigger query cache invalidation
@@ -89,22 +103,22 @@ export function useRealtimeTips({
             });
           });
 
-          // Mark as read after 3 seconds
-          setTimeout(() => {
-            setTips((prev) =>
-              prev.map((t) => (newTips.some((nt) => nt.id === t.id) ? { ...t, isNew: false } : t))
-            );
+          // Mark as read after 3 seconds. Scheduled through useSafeTimeout so
+          // it is cleared if the hook unmounts (or creatorId changes) first.
+          const ids = new Set(newTips.map((nt) => nt.id));
+          schedule(() => {
+            setTips((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isNew: false } : t)));
           }, 3000);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch tips');
+        setError(getErrorMessage(err, 'Failed to fetch tips'));
       }
 
       pollingTimeoutRef.current = setTimeout(pollTips, pollingInterval);
     };
 
     pollTips();
-  }, [creatorId, pollingInterval, onTipReceived, queryClient]);
+  }, [creatorId, pollingInterval, onTipReceived, queryClient, prependTips, schedule]);
 
   // Start websocket connection
   const startWebSocket = useCallback(() => {
@@ -146,7 +160,7 @@ export function useRealtimeTips({
             isNew: true,
           };
 
-          setTips((prev) => [tip, ...prev]);
+          prependTips([tip]);
           unreadCountRef.current += 1;
 
           onTipReceived?.(tip);
@@ -154,9 +168,10 @@ export function useRealtimeTips({
             queryKey: ['transactionHistory', creatorId],
           });
 
-          // Mark as read after 3 seconds
-          setTimeout(() => {
-            setTips((prev) => prev.map((t) => (t.id === tip.id ? { ...t, isNew: false } : t)));
+          // Mark as read after 3 seconds (tracked so it is cleared on unmount).
+          const tipId = tip.id;
+          schedule(() => {
+            setTips((prev) => prev.map((t) => (t.id === tipId ? { ...t, isNew: false } : t)));
           }, 3000);
         } catch (err) {
           console.error('Failed to parse websocket message:', err);
@@ -174,9 +189,9 @@ export function useRealtimeTips({
 
       webSocketRef.current = ws as WebSocket;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect websocket');
+      setError(getErrorMessage(err, 'Failed to connect websocket'));
     }
-  }, [creatorId, enableWebSocket, onTipReceived, queryClient]);
+  }, [creatorId, enableWebSocket, onTipReceived, queryClient, prependTips, schedule]);
 
   // Initialize polling or websocket
   useEffect(() => {
@@ -195,8 +210,11 @@ export function useRealtimeTips({
       if (webSocketRef.current) {
         webSocketRef.current.close();
       }
+      // Clear any pending "mark as read" timers from the previous run so
+      // they cannot outlive the effect or retain stale tip arrays.
+      cancelAll();
     };
-  }, [creatorId, enableWebSocket, pollingInterval, startPolling, startWebSocket]);
+  }, [creatorId, enableWebSocket, pollingInterval, startPolling, startWebSocket, cancelAll]);
 
   const clearTips = useCallback(() => {
     setTips([]);

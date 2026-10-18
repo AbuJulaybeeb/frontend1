@@ -7,7 +7,7 @@ vi.mock('@/hooks/use-wallet', () => ({
 }));
 
 describe('SettingsPage', () => {
-  it('allows profile fields to be edited and saved', async () => {
+  it('allows profile fields to be edited and saved', async (): Promise<void> => {
     render(<SettingsPage />);
 
     const displayName = screen.getByLabelText('Display Name');
@@ -24,7 +24,7 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Settings saved successfully!')).toBeInTheDocument();
   });
 
-  it('enforces the bio limit and renders the live character indicator', () => {
+  it('enforces the bio limit and renders the live character indicator', (): void => {
     render(<SettingsPage />);
 
     const bio = screen.getByLabelText('Creator bio');
@@ -34,13 +34,15 @@ describe('SettingsPage', () => {
     expect(screen.getByText('500/500')).toBeInTheDocument();
   });
 
-  it('clears a previous status message when the user edits a field', async () => {
+  it('clears a previous status message when the user edits a field', async (): Promise<void> => {
     render(<SettingsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Profile Settings' }));
     expect(await screen.findByText('Settings saved successfully!')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Display Name'), { target: { value: 'Edited' } });
-    await waitFor(() => expect(screen.queryByText('Settings saved successfully!')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText('Settings saved successfully!')).not.toBeInTheDocument()
+    );
   });
 });

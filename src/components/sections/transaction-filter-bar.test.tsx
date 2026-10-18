@@ -129,4 +129,89 @@ describe('TransactionFilterBar', () => {
     expect(onExportExcel).toHaveBeenCalledTimes(1);
     expect(onExportPdf).toHaveBeenCalledTimes(1);
   });
+
+  // The reflow is verified in a real browser (e2e/mobile-responsive.spec.ts);
+  // these assertions pin the responsive classes it depends on (#168).
+  describe('responsive layout (#168)', () => {
+    it('collapses the date and amount range to one column on narrow screens', () => {
+      render(
+        <TransactionFilterBar
+          filters={baseFilters}
+          onChange={vi.fn()}
+          onReset={vi.fn()}
+          onExport={vi.fn()}
+          resultCount={0}
+        />
+      );
+
+      const bar = screen.getByTestId('transaction-filter-bar');
+      const rangeGrid = bar.firstElementChild as HTMLElement;
+
+      expect(rangeGrid).toHaveClass('grid-cols-1');
+      expect(rangeGrid).toHaveClass('sm:grid-cols-2');
+      expect(rangeGrid).toHaveClass('md:grid-cols-4');
+    });
+
+    it('lets every grid and flex child shrink so a long value cannot widen the bar', () => {
+      render(
+        <TransactionFilterBar
+          filters={baseFilters}
+          onChange={vi.fn()}
+          onReset={vi.fn()}
+          onExport={vi.fn()}
+          resultCount={0}
+        />
+      );
+
+      const bar = screen.getByTestId('transaction-filter-bar');
+      const controlsRow = bar.children[1] as HTMLElement;
+
+      expect(controlsRow.className).toContain('grid-cols-2');
+      expect(controlsRow.className).toContain('sm:flex');
+      expect(controlsRow.querySelectorAll('.min-w-0').length).toBeGreaterThan(0);
+    });
+
+    it('keeps the keyword search full width on a phone and flexible from sm upwards', () => {
+      render(
+        <TransactionFilterBar
+          filters={baseFilters}
+          onChange={vi.fn()}
+          onReset={vi.fn()}
+          onExport={vi.fn()}
+          resultCount={0}
+        />
+      );
+
+      const keywordField = screen.getByLabelText('Message search').parentElement as HTMLElement;
+
+      expect(keywordField).toHaveClass('col-span-2');
+      expect(keywordField).toHaveClass('w-full');
+      expect(keywordField).toHaveClass('sm:flex-1');
+    });
+
+    it('gives every action a 44px touch target that relaxes once there is room', () => {
+      render(
+        <TransactionFilterBar
+          filters={baseFilters}
+          onChange={vi.fn()}
+          onReset={vi.fn()}
+          onExport={vi.fn()}
+          onExportExcel={vi.fn()}
+          onExportPdf={vi.fn()}
+          resultCount={3}
+        />
+      );
+
+      for (const name of [
+        'Reset',
+        'Export CSV (3)',
+        'Excel',
+        'PDF',
+      ]) {
+        const control = screen.getByRole('button', { name });
+        expect(control.className).toContain('min-h-[44px]');
+        expect(control.className).toContain('sm:min-h-0');
+      }
+    });
+  });
 });

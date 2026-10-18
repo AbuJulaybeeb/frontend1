@@ -5,8 +5,10 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
+import { useNotification } from '@/components/notification-provider';
+import { copyToClipboard } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +20,7 @@ import {
   ModalDescription,
   ModalFooter,
 } from '@/components/ui/modal';
-import { Wallet, Trash2, Check, AlertCircle } from 'lucide-react';
+import { Wallet, Trash2, Check, AlertCircle, Copy } from 'lucide-react';
 
 export interface WalletManagerProps {
   onWalletSelect?: (walletId: string) => void;
@@ -26,11 +28,15 @@ export interface WalletManagerProps {
 
 export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Element {
   const { wallets, selectedWallet, loading, error, selectWallet, disconnectWallet } = useWallet();
+  const { success: toastSuccess, error: toastError } = useNotification();
 
   // Per-wallet operation state: tracks loading and inline error per wallet ID.
   const [operationState, setOperationState] = useState<
     Record<string, { loading: boolean; error: string | null }>
   >({});
+
+  // Briefly marks a wallet address as "just copied" for visual feedback.
+  const [copiedWalletId, setCopiedWalletId] = useState<string | null>(null);
 
   const getOpState = (walletId: string): { loading: boolean; error: string | null } =>
     operationState[walletId] ?? { loading: false, error: null };
@@ -46,6 +52,21 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
   };
 
   const clearOpError = (walletId: string): void => setOpState(walletId, { error: null });
+
+  const handleCopyAddress = useCallback(
+    async (e: React.MouseEvent, walletId: string, address: string) => {
+      e.stopPropagation();
+      try {
+        await copyToClipboard(address);
+        toastSuccess('Address copied to clipboard');
+        setCopiedWalletId(walletId);
+        setTimeout(() => setCopiedWalletId((prev) => (prev === walletId ? null : prev)), 2000);
+      } catch {
+        toastError('Failed to copy address — please copy manually');
+      }
+    },
+    [toastSuccess, toastError]
+  );
 
   const handleSelectWallet = (walletId: string): void => {
     const wallet = wallets.find((w) => w.id === walletId);
@@ -74,7 +95,11 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
   // -------------------------------------------------------------------------
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8" role="status" aria-label="Loading wallets">
+      <div
+        className="flex items-center justify-center p-8"
+        role="status"
+        aria-label="Loading wallets"
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-sm text-muted-foreground">Loading wallets...</p>
@@ -94,7 +119,7 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold">Error loading wallets</p>
-            <p className="text-sm">{error}</p>
+            <p className="text-sm">{error?.message || 'Unknown error'}</p>
           </div>
         </div>
       </div>
@@ -145,7 +170,23 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
                   <p className="font-medium truncate">
                     {wallet.name || `Wallet ${wallet.publicKey.slice(0, 8)}...`}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{wallet.publicKey}</p>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="text-xs text-muted-foreground truncate flex-1">
+                      {wallet.publicKey}
+                    </p>
+                    <button
+                      onClick={(e) => handleCopyAddress(e, wallet.id, wallet.publicKey)}
+                      className="p-1 hover:bg-muted rounded transition flex-shrink-0"
+                      aria-label={`Copy address for ${wallet.name || 'wallet'}`}
+                      data-testid={`copy-address-${wallet.id}`}
+                    >
+                      {copiedWalletId === wallet.id ? (
+                        <Check className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
                   {wallet.verified && (
                     <span className="inline-block mt-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                       ✓ Verified
@@ -160,7 +201,10 @@ export function WalletManager({ onWalletSelect }: WalletManagerProps): JSX.Eleme
                       aria-live="polite"
                       data-testid={`wallet-error-${wallet.id}`}
                     >
-                      <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <AlertCircle
+                        className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span>{walletError}</span>
                       <button
                         onClick={(e) => {
